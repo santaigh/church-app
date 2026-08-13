@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sign in — Church App</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/password-toggle.js}" defer></script>
+</head>
+<body>
+<div class="centered">
+    <div class="card card-narrow">
+        <div class="brand">
+            <h1>Church App</h1>
+            <p class="brand-sub">Parish sign-in</p>
+        </div>
+
+        <div class="alert alert-error" th:if="${errorMessage}" role="alert" th:text="${errorMessage}">
+            Invalid credentials.
+        </div>
+        <div class="alert alert-info" th:if="${infoMessage}" role="status" th:text="${infoMessage}">
+            Signed out.
+        </div>
+
+        <!--
+          th:action makes Thymeleaf add the CSRF token automatically. Posting this form
+          without it is rejected before it reaches any handler.
+        -->
+        <form th:action="@{/login}" method="post">
+            <div class="field">
+                <label for="username">Email or mobile number</label>
+                <input type="text" id="username" name="username"
+                       autocomplete="username" required autofocus
+                       placeholder="you@example.com or +9198…">
+            </div>
+
+            <div class="field">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password"
+                       autocomplete="current-password" required>
+            </div>
+
+            <button class="btn btn-block" type="submit">Sign in</button>
+        </form>
+
+        <p class="form-note">
+            <a th:href="@{/forgot-password}">Forgot your password?</a>
+        </p>
+
+        <p class="form-note">
+            Members without an email address or mobile number on file cannot sign in.
+            Contact your parish office.
+        </p>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Error — Church App</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<!-- Fallback for any status without a dedicated page (400, 405, 409, ...). -->
+<div th:replace="~{fragments/error-card :: card(
+        'Request could not be completed',
+        'Please review the details above and try again.')}"></div>
+</body>
+</html>

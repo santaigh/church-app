@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Platform dashboard — Church App</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body class="theme-platform">
+<header class="topbar">
+    <span class="topbar-brand">Church App — Platform</span>
+    <span class="topbar-user">
+        <strong th:text="${displayName}">Name</strong>
+        <span class="badge" th:text="${roleCode}">Role</span>
+    </span>
+    <form th:action="@{/saas/logout}" method="post" class="topbar-logout">
+        <button class="btn btn-ghost" type="submit">Sign out</button>
+    </form>
+</header>
+
+<main class="page">
+    <div class="alert alert-warn" th:if="${usingDefaultPassword}">
+        This account is still using the default password.
+    </div>
+
+    <h1>Platform dashboard</h1>
+    <p class="muted">
+        This account has no owning church, which is what allows it to reach every parish.
+    </p>
+
+    <section class="card">
+        <h2>Session</h2>
+        <dl class="detail">
+            <dt>Name</dt><dd th:text="${displayName}">—</dd>
+            <dt>Role</dt><dd th:text="${roleCode}">—</dd>
+            <dt>Account type</dt><dd th:text="${actorType}">—</dd>
+            <dt>Church scope</dt><dd th:text="${churchId} ?: 'all churches'">all churches</dd>
+        </dl>
+    </section>
+
+    <section class="card">
+        <h2>Permissions granted by this role</h2>
+        <ul class="chips">
+            <li th:each="authority : ${authorities}" th:text="${authority}">PERM_X_Y</li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<body>
+
+<!--
+  Shared error card.
+
+  Rendered both by GlobalExceptionHandler (full model, including correlationId) and by
+  Spring Boot's DefaultErrorViewResolver for container-level errors (partial model), so
+  every field is null-tolerant.
+-->
+<div th:fragment="card(heading, hint)" class="centered">
+    <div class="card">
+        <p class="error-code" th:text="${status} ?: '—'">500</p>
+        <h1 class="error-heading" th:text="${heading}">Something went wrong</h1>
+
+        <p class="error-message"
+           th:if="${message != null and !#strings.isEmpty(message)}"
+           th:text="${message}">Details of the problem.</p>
+
+        <ul class="field-errors" th:if="${fieldErrors != null and !fieldErrors.isEmpty()}">
+            <li th:each="entry : ${fieldErrors}">
+                <span class="field-name" th:text="${entry.key}">field</span>
+                <span th:text="${entry.value}">must not be blank</span>
+            </li>
+        </ul>
+
+        <p class="error-hint" th:text="${hint}">What to try next.</p>
+
+        <p><a class="btn" th:href="@{/}">Back to home</a></p>
+
+        <div class="meta">
+            <dl>
+                <dt>Reference</dt>
+                <dd class="mono" th:text="${correlationId} ?: 'n/a'">a1b2c3d4</dd>
+                <dt th:if="${path != null}">Path</dt>
+                <dd class="mono" th:if="${path != null}" th:text="${path}">/some/path</dd>
+                <dt th:if="${code != null}">Code</dt>
+                <dd class="mono" th:if="${code != null}" th:text="${code}">INTERNAL_ERROR</dd>
+            </dl>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

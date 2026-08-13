@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard — Church App</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<header class="topbar">
+    <span class="topbar-brand">Church App</span>
+    <span class="topbar-user">
+        <strong th:text="${displayName}">Name</strong>
+        <span class="badge" th:text="${roleCode}">Role</span>
+    </span>
+    <!-- POST, not a link: a GET logout can be fired by an image tag on another site. -->
+    <form th:action="@{/logout}" method="post" class="topbar-logout">
+        <button class="btn btn-ghost" type="submit">Sign out</button>
+    </form>
+</header>
+
+<main class="page">
+    <div class="alert alert-warn" th:if="${usingDefaultPassword}">
+        This account is still using the default password. Changing it will be enforced
+        in the next step.
+    </div>
+
+    <h1>Parish dashboard</h1>
+    <p class="muted">Signed in and authorised. The real dashboard arrives with its own module.</p>
+
+    <section class="card">
+        <h2>Session</h2>
+        <dl class="detail">
+            <dt>Name</dt><dd th:text="${displayName}">—</dd>
+            <dt>Role</dt><dd th:text="${roleCode}">—</dd>
+            <dt>Account type</dt><dd th:text="${actorType}">—</dd>
+            <dt>Church</dt><dd th:text="${churchId} ?: 'all churches'">—</dd>
+        </dl>
+    </section>
+
+    <section class="card">
+        <h2>Permissions granted by this role</h2>
+        <p class="muted">Loaded from <code>role_permission</code> at sign-in.</p>
+        <ul class="chips">
+            <li th:each="authority : ${authorities}" th:text="${authority}">PERM_X_Y</li>
+        </ul>
+    </section>
+</main>
+</body>
+</html>

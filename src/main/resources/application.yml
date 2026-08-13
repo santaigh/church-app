@@ -1,0 +1,113 @@
+spring:
+  application:
+    name: church-app
+
+  config:
+    # Local credentials live in application-local.yml, which is gitignored and never
+    # committed. Imported properties take precedence over this file, so that copy wins
+    # on a developer machine. "optional:" means a fresh clone without the file still
+    # starts -- provided DB_PASSWORD is supplied through the environment.
+    import: optional:classpath:application-local.yml
+
+  profiles:
+    # Drives both logback-spring.xml appenders and the @Profile("dev") test endpoints.
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    # characterEncoding=UTF-8 + utf8mb4 collation so Tamil Anbiyam and member
+    # names round-trip correctly rather than arriving as '?'.
+    url: jdbc:mysql://localhost:3306/churchnew?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Kolkata&allowPublicKeyRetrieval=true&useSSL=false
+    username: ${DB_USERNAME:root}
+    # Deliberately has NO fallback. A default here would be the real password, and once
+    # committed it would stay in the git history for good. Missing value = clear startup
+    # failure, which is far better than silently trying a wrong one.
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: church-hikari
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by Flyway, never by Hibernate. `validate` makes startup fail
+      # if an entity and its table have drifted apart, so a mapping mistake surfaces
+      # immediately instead of as a runtime error on some rarely-used screen.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        # Dialect is auto-detected from the connection; setting it explicitly only
+        # produces a deprecation warning.
+        format_sql: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    # The five original tables (church, member, member_ext, anbiyam, parish_priest)
+    # were created outside Flyway. Baselining records them as version 1 -- Flyway
+    # adopts them as-is and never tries to recreate them -- and applies V2 onward.
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: "Existing schema created outside Flyway"
+    # BCrypt hashes contain '$'. Flyway's placeholder prefix is '${' so they are
+    # safe either way, but replacement is off to remove the risk entirely.
+    placeholder-replacement: false
+    encoding: UTF-8
+
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+    encoding: UTF-8
+
+server:
+  port: 8080
+  servlet:
+    session:
+      timeout: 30m
+  error:
+    # GlobalExceptionHandler renders our own pages; the whitelabel page must not win.
+    whitelabel:
+      enabled: false
+    path: /error
+    # DEV SETTING: surfaces exception messages on container-level error pages.
+    # Set to 'never' in production -- messages can disclose internals.
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Log levels and appenders are owned by logback-spring.xml, per profile,
+# so that there is a single source of truth.
+
+app:
+  security:
+    # Dial code assumed when a mobile number is typed without one. Change this single
+    # value for a deployment in another country; numbers typed with an explicit '+'
+    # are always honoured as-is, so overseas numbers work either way.
+    default-country-code: "+91"
+    # Assigned when an account is created; password_flag = 0 forces a change on first use.
+    default-password: "Welcome123$"
+    # Assigned by "forgot password"; also sets password_flag back to 0.
+    reset-password: "PleaseReset@123"
+    # A reset restores a known password, so the form must not be usable without limit.
+    max-password-resets-per-hour: 3
+    # Consecutive wrong passwords before the account locks. No automatic expiry --
+    # an administrator must clear locked_at.
+    max-failed-login-attempts: 5
+  payment:
+    # Floor for a family's monthly contribution. A priest may raise or lower the
+    # amount, but not below this. Platform-wide for now; can move to a per-church
+    # setting later without touching the payment tables.
+    min-monthly-amount: 50.00
+    # Receipt numbering resets every January (calendar year, not financial year).
+    receipt-prefix: R
+

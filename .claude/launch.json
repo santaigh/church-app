@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "church-app",
+      "runtimeExecutable": "H:\\church-app\\gradlew.bat",
+      "runtimeArgs": ["bootRun", "--console=plain"],
+      "port": 8080
+    }
+  ]
+}
