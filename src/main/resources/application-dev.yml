@@ -1,0 +1,41 @@
+# ---------------------------------------------------------------------------
+# DEVELOPMENT — a developer's own machine.
+#
+# Credentials come from application-local.yml (gitignored) or the environment.
+# This is the only profile that loads sample data.
+# ---------------------------------------------------------------------------
+spring:
+  datasource:
+    # characterEncoding=UTF-8 + utf8mb4 collation so Tamil Anbiyam and member names
+    # round-trip correctly rather than arriving as '?'.
+    url: ${DB_URL:jdbc:mysql://localhost:3306/churchnew?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Kolkata&allowPublicKeyRetrieval=true&useSSL=false}
+    # A single developer needs far fewer connections than a deployed instance.
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  flyway:
+    # db/seed is included HERE ONLY. It holds V7 and V14, which insert three fictional
+    # churches with members, families and receipts. UAT and production apply
+    # db/migration alone, so that data cannot reach them even by accident.
+    locations: classpath:db/migration,classpath:db/seed
+
+  thymeleaf:
+    # Edit a template and refresh -- no restart.
+    cache: false
+
+server:
+  error:
+    # Surfaces exception messages on container-level error pages. Development only:
+    # messages can disclose internals.
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env,configprops,beans,mappings
+  endpoint:
+    health:
+      show-details: always

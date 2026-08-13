@@ -81,19 +81,34 @@
         </root>
     </springProfile>
 
+    <!-- UAT: production levels, but the console is kept so a tester's session can be
+         followed live, and application logging stays at DEBUG to diagnose a report. -->
+    <springProfile name="uat">
+        <logger name="com.church.app" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="WARN"/>
+        <logger name="org.springframework" level="WARN"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE"/>
+            <appender-ref ref="ERROR_FILE"/>
+        </root>
+    </springProfile>
+
     <springProfile name="prod">
         <logger name="com.church.app" level="INFO"/>
         <logger name="org.hibernate.SQL" level="WARN"/>
         <logger name="org.springframework" level="WARN"/>
 
+        <!-- No console appender: output goes to the rolling files only. -->
         <root level="WARN">
             <appender-ref ref="ASYNC_FILE"/>
             <appender-ref ref="ERROR_FILE"/>
         </root>
     </springProfile>
 
-    <!-- Fallback when no profile is active (e.g. plain `java -jar`) -->
-    <springProfile name="!dev &amp; !prod">
+    <!-- Fallback when no known profile is active (e.g. plain `java -jar`) -->
+    <springProfile name="!dev &amp; !uat &amp; !prod">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="ASYNC_FILE"/>

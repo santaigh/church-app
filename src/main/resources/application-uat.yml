@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# UAT — user acceptance testing.
+#
+# Configured like production, so that what is signed off resembles what ships.
+# The differences from prod are deliberately small: more diagnostics, and a
+# database that may be refreshed.
+#
+# Every credential comes from the environment. There is no local file.
+#   DB_URL  DB_USERNAME  DB_PASSWORD
+# ---------------------------------------------------------------------------
+spring:
+  datasource:
+    url: ${DB_URL}
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 3
+
+  flyway:
+    # Schema and reference data only. db/seed is NOT listed, so the sample churches
+    # and receipts never appear here.
+    locations: classpath:db/migration
+
+  thymeleaf:
+    # Templates are packaged in the jar; caching them is free.
+    cache: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        # UAT is expected to be served over HTTPS, as production is.
+        secure: true
+  error:
+    # Testers report what they see, so a message helps -- but never a stack trace.
+    include-message: always
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized

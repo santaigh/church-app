@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# PRODUCTION — real parishes, real contributions.
+#
+# Every credential comes from the environment; nothing sensitive is in this file.
+#   DB_URL  DB_USERNAME  DB_PASSWORD
+#
+# Also override the password policy values, since the committed defaults are
+# public in the repository:
+#   APP_DEFAULT_PASSWORD  APP_RESET_PASSWORD
+# ---------------------------------------------------------------------------
+spring:
+  datasource:
+    url: ${DB_URL}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: 5
+      # Recycle connections before MySQL's own wait_timeout closes them underneath us.
+      max-lifetime: 1740000
+      leak-detection-threshold: 60000
+
+  flyway:
+    # Schema and reference data only. db/seed is NOT listed -- the sample churches,
+    # members and receipts in V7 and V14 can never be applied here.
+    locations: classpath:db/migration
+    # `flyway clean` drops every object in the schema. Refuse it outright.
+    clean-disabled: true
+
+  thymeleaf:
+    cache: true
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: true
+  error:
+    # Never disclose internals to a browser. Users get the correlation id shown on the
+    # error page instead, which leads to the full detail in the logs.
+    include-message: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Health only. env, configprops and beans would expose configuration.
+        include: health
+  endpoint:
+    health:
+      show-details: never

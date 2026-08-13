@@ -56,14 +56,41 @@ gradlew.bat bootRun    # http://localhost:8080
 | `/saas/login` | Platform sign-in (SaaS staff) |
 | `/actuator/health` | Health check |
 
+## Environments
+
+| Profile | File | Purpose |
+|---|---|---|
+| `dev` | `application-dev.yml` | A developer's machine. **The only profile that loads sample data.** |
+| `uat` | `application-uat.yml` | Acceptance testing. Configured like production |
+| `prod` | `application-prod.yml` | Production |
+
+```bash
+SPRING_PROFILES_ACTIVE=uat  java -jar church-app.jar
+```
+
+Shared settings live in `application.yml`; only what genuinely differs is in a profile
+file. Required environment variables for `uat` and `prod`:
+
+| Variable | Notes |
+|---|---|
+| `DB_URL` | Full JDBC URL, including `characterEncoding=UTF-8` for Tamil text |
+| `DB_USERNAME`, `DB_PASSWORD` | No defaults exist — startup fails loudly if missing |
+| `APP_DEFAULT_PASSWORD`, `APP_RESET_PASSWORD` | Override the committed values, which are public |
+
 ## Sample data
 
-Migrations `V7` and `V14` seed three fictional churches with members, families, Anbiyams
-and contributions, for development only. Every sample account uses the password
-`Welcome123$` — see [docs/security.md](docs/security.md#sample-accounts).
+Migrations live in two places:
 
-> **These migrations must not run against a production database.** Separating them via
-> profile-specific `spring.flyway.locations` is an outstanding task.
+- **`db/migration`** — schema and reference data (roles, permissions). Applied everywhere.
+- **`db/seed`** — `V7` and `V14`, which insert three fictional churches with members,
+  families, Anbiyams and receipts. **Listed only in `application-dev.yml`.**
+
+So sample data cannot reach UAT or production — not by policy, but because those profiles
+never look in that directory. Verified against a fresh schema: reference data arrives
+(6 roles, 275 permissions) with zero churches, members or payments.
+
+Every sample account uses the password `Welcome123$` — see
+[docs/security.md](docs/security.md#sample-accounts).
 
 ## Project status
 
