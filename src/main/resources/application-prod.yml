@@ -10,7 +10,14 @@
 # ---------------------------------------------------------------------------
 spring:
   datasource:
-    url: ${DB_URL}
+    # DEVELOPMENT-STAGE DEFAULT: a local `churchprod` schema, so this profile can be
+    # rehearsed before a real server exists. The production deployment sets DB_URL and
+    # that value wins.
+    #
+    # REPLACE THIS BEFORE GOING LIVE. A production profile that silently falls back to
+    # localhost is a foot-gun: point it at the real host, or delete the default so a
+    # missing DB_URL fails loudly instead.
+    url: ${DB_URL:jdbc:mysql://localhost:3306/churchprod?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Kolkata&allowPublicKeyRetrieval=true&useSSL=false}
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:20}
       minimum-idle: 5

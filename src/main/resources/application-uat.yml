@@ -10,7 +10,13 @@
 # ---------------------------------------------------------------------------
 spring:
   datasource:
-    url: ${DB_URL}
+    # DEVELOPMENT-STAGE DEFAULT: points at a local `churchuat` schema so this profile
+    # can be exercised on a developer machine. A real UAT server sets DB_URL and the
+    # environment value wins. Replace this default when UAT is provisioned.
+    #
+    # A separate schema, not churchnew: this profile does not load db/seed, and Flyway
+    # would reject churchnew's already-applied V7/V14 as "not resolved locally".
+    url: ${DB_URL:jdbc:mysql://localhost:3306/churchuat?useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Kolkata&allowPublicKeyRetrieval=true&useSSL=false}
     hikari:
       maximum-pool-size: 15
       minimum-idle: 3
