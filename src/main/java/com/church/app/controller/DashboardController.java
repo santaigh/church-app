@@ -38,6 +38,7 @@ public class DashboardController {
         model.addAttribute("roleCode", principal.getRoleCode());
         model.addAttribute("actorType", principal.getActorType());
         model.addAttribute("churchId", principal.getChurchId());
+        model.addAttribute("churchName", principal.getChurchName());
         model.addAttribute("usingDefaultPassword", principal.isUsingDefaultPassword());
         model.addAttribute("authorities", principal.getAuthorities().stream()
                 .map(Object::toString).sorted().toList());

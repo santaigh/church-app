@@ -26,6 +26,7 @@ public class AppUserPrincipal implements UserDetails {
 
     private final Long userId;
     private final Long churchId;
+    private final String churchName;
     private final ActorType actorType;
     private final String username;
     private final String password;
@@ -39,6 +40,7 @@ public class AppUserPrincipal implements UserDetails {
     private AppUserPrincipal(Builder builder) {
         this.userId = builder.userId;
         this.churchId = builder.churchId;
+        this.churchName = builder.churchName;
         this.actorType = builder.actorType;
         this.username = builder.username;
         this.password = builder.password;
@@ -61,6 +63,16 @@ public class AppUserPrincipal implements UserDetails {
     /** Null for platform users, who are not restricted to one church. */
     public Long getChurchId() {
         return churchId;
+    }
+
+    /**
+     * The parish name, captured at sign-in so the page header costs no query.
+     *
+     * <p>Null for platform users, for the same reason {@link #getChurchId()} is. Goes
+     * stale if the church is renamed mid-session -- corrected at the next sign-in.
+     */
+    public String getChurchName() {
+        return churchName;
     }
 
     public ActorType getActorType() {
@@ -113,6 +125,7 @@ public class AppUserPrincipal implements UserDetails {
 
         private Long userId;
         private Long churchId;
+        private String churchName;
         private ActorType actorType = ActorType.MEMBER;
         private String username;
         private String password;
@@ -130,6 +143,11 @@ public class AppUserPrincipal implements UserDetails {
 
         public Builder churchId(Long churchId) {
             this.churchId = churchId;
+            return this;
+        }
+
+        public Builder churchName(String churchName) {
+            this.churchName = churchName;
             return this;
         }
 

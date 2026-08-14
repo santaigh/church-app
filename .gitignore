@@ -49,3 +49,6 @@ application-*-local.yml
 .env.*
 !.env.example
 
+
+# Uploaded church logos -- runtime data, not source.
+/data/

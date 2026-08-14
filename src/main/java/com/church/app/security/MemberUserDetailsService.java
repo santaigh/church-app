@@ -68,6 +68,8 @@ public class MemberUserDetailsService implements UserDetailsService {
         AppUserPrincipal.Builder principal = AppUserPrincipal.builder()
                 .userId(member.getId())
                 .churchId(member.getChurch().getId())
+                // Read inside the transaction, so a lazy church proxy is safe to touch.
+                .churchName(member.getChurch().getChurchName())
                 .actorType(ActorType.MEMBER)
                 .username(identifier)
                 .password(member.getMemberPassword())

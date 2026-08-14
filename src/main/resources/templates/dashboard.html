@@ -1,23 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard — Church App</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
-</head>
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
 <body>
-<header class="topbar">
-    <span class="topbar-brand">Church App</span>
-    <span class="topbar-user">
-        <strong th:text="${displayName}">Name</strong>
-        <span class="badge" th:text="${roleCode}">Role</span>
-    </span>
-    <!-- POST, not a link: a GET logout can be fired by an image tag on another site. -->
-    <form th:action="@{/logout}" method="post" class="topbar-logout">
-        <button class="btn btn-ghost" type="submit">Sign out</button>
-    </form>
-</header>
+<header th:replace="~{fragments/layout :: topbar}"></header>
 
 <main class="page">
     <div class="alert alert-warn" th:if="${usingDefaultPassword}">
@@ -25,8 +10,10 @@
         in the next step.
     </div>
 
-    <h1>Parish dashboard</h1>
-    <p class="muted">Signed in and authorised. The real dashboard arrives with its own module.</p>
+    <div class="page-head">
+        <h1>Parish dashboard</h1>
+        <p class="muted">Signed in and authorised. The real dashboard arrives with its own module.</p>
+    </div>
 
     <section class="card">
         <h2>Session</h2>
@@ -34,7 +21,7 @@
             <dt>Name</dt><dd th:text="${displayName}">—</dd>
             <dt>Role</dt><dd th:text="${roleCode}">—</dd>
             <dt>Account type</dt><dd th:text="${actorType}">—</dd>
-            <dt>Church</dt><dd th:text="${churchId} ?: 'all churches'">—</dd>
+            <dt>Church</dt><dd th:text="${churchName} ?: 'all churches'">—</dd>
         </dl>
     </section>
 

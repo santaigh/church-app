@@ -1,32 +1,20 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Platform dashboard — Church App</title>
-    <link rel="stylesheet" th:href="@{/css/app.css}">
-</head>
+<head th:replace="~{fragments/layout :: head('Platform dashboard')}"></head>
 <body class="theme-platform">
-<header class="topbar">
-    <span class="topbar-brand">Church App — Platform</span>
-    <span class="topbar-user">
-        <strong th:text="${displayName}">Name</strong>
-        <span class="badge" th:text="${roleCode}">Role</span>
-    </span>
-    <form th:action="@{/saas/logout}" method="post" class="topbar-logout">
-        <button class="btn btn-ghost" type="submit">Sign out</button>
-    </form>
-</header>
+<header th:replace="~{fragments/layout :: topbar}"></header>
 
 <main class="page">
     <div class="alert alert-warn" th:if="${usingDefaultPassword}">
         This account is still using the default password.
     </div>
 
-    <h1>Platform dashboard</h1>
-    <p class="muted">
-        This account has no owning church, which is what allows it to reach every parish.
-    </p>
+    <div class="page-head">
+        <h1>Platform dashboard</h1>
+        <p class="muted">
+            This account has no owning church, which is what allows it to reach every parish.
+        </p>
+    </div>
 
     <section class="card">
         <h2>Session</h2>

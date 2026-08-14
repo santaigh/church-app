@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<!--/*
+    The shared page shell.
+
+    Every signed-in page uses these two fragments instead of repeating its own head and
+    header. Both dashboards had already grown their own copy of the topbar, which is the
+    duplication this exists to stop.
+
+    Usage:
+        <head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+        <header th:replace="~{fragments/layout :: topbar}"></header>
+
+    The header reads ${header}, supplied to every view by HeaderModelAdvice, so a page
+    needs no controller change to get it.
+*/-->
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|${title} — Church App|">Church App</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/menu.js}" defer></script>
+</head>
+<body>
+
+<header class="topbar" th:fragment="topbar" th:if="${header != null}">
+    <div class="topbar-inner">
+
+        <!--/* Left: the parish crest, or the wordmark for platform staff, who have no church. */-->
+        <a class="topbar-identity" th:href="@{/dashboard}" th:unless="${header.platform}">
+            <img class="topbar-logo" th:src="@{/church/logo}" alt="" width="40" height="40">
+        </a>
+        <span class="topbar-identity" th:if="${header.platform}">
+            <span class="topbar-wordmark">Church<strong>App</strong></span>
+            <span class="topbar-tag">Platform</span>
+        </span>
+
+        <!--/* Right: church name, then the profile menu. */-->
+        <div class="topbar-actions">
+            <span class="topbar-church" th:unless="${header.platform}"
+                  th:text="${header.churchName}">Parish name</span>
+            <span class="topbar-sep" aria-hidden="true"></span>
+
+            <details class="profile" data-menu>
+                <summary class="profile-trigger">
+                    <span class="avatar"
+                          th:text="${#strings.isEmpty(header.displayName)} ? '?'
+                                   : ${#strings.toUpperCase(#strings.substring(header.displayName, 0, 1))}">A</span>
+                    <span class="profile-who">
+                        <span class="profile-name" th:text="${header.displayName}">Name</span>
+                        <span class="profile-role" th:text="${header.roleCode}">Role</span>
+                    </span>
+                    <svg class="profile-chevron" viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6"
+                              stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </summary>
+
+                <div class="profile-menu">
+                    <div class="profile-menu-head">
+                        <p class="profile-menu-name" th:text="${header.displayName}">Name</p>
+                        <p class="profile-menu-sub" th:text="${header.roleCode}">Role</p>
+                    </div>
+                    <a class="profile-item" th:href="@{${header.changePasswordUrl}}">Change password</a>
+                    <!--/* POST, not a link: a GET logout can be fired by an image tag on another site. */-->
+                    <form th:action="@{${header.logoutUrl}}" method="post">
+                        <button class="profile-item profile-item-danger" type="submit">Sign out</button>
+                    </form>
+                </div>
+            </details>
+        </div>
+    </div>
+</header>
+
+</body>
+</html>

@@ -105,6 +105,10 @@ app:
     # Consecutive wrong passwords before the account locks. No automatic expiry --
     # an administrator must clear locked_at.
     max-failed-login-attempts: 5
+  storage:
+    # Per-church logos, one file per church named <church_id>.png. Outside the jar,
+    # and never mapped as a static resource root -- see AppStorageProperties.
+    logo-dir: ${APP_LOGO_DIR:./data/logos}
   payment:
     # Floor for a family's monthly contribution. A priest may raise or lower the amount,
     # but not below this. Platform-wide for now; can move to a per-church setting later

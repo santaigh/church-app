@@ -63,6 +63,17 @@ Starter names changed from Boot 3. Tutorials will not match:
   with a pessimistic lock
 - **UI**: payment screens are mobile/tablet-first; everything else desktop-first but must
   degrade to usable. Receipts print to a 58mm POS thermal printer
+- **App shell is a left sidebar**, collapsing to a drawer on phones and tablet portrait.
+  Chosen over dashboard tiles and a top menu bar because the module list keeps growing
+- **Tables become stacked cards below 640px** — everywhere, not only on payments, so
+  every module copies one rule rather than two that drift apart
+- **Parish priest is an appointment history**: one row per church posting, `to_date IS
+  NULL` means currently serving. `active_flag` is deliberately NOT used on that table —
+  two columns answering "who is current" can disagree, with nothing to catch it
+- **Appointing a priest auto-closes the open row** at the new start date, so a church can
+  never show two current priests. Enforced in the service: MySQL has no partial unique index
+- **Only SaaSSAdmin and SaaSAdmin may appoint a priest.** Parish staff see who their
+  priest is but cannot change it — an appointment is a diocese-level act
 
 ## Traps discovered the hard way
 
@@ -84,7 +95,13 @@ Starter names changed from Boot 3. Tutorials will not match:
 
 ## Sample accounts
 
-Password `Welcome123$` for all. Parish → `/login`, platform → `/saas/login`.
+Password `Welcome123$` **except** `superadmin@churchapp.local` and
+`antony.raj@stmarys-chennai.org`, whose passwords were changed through the running
+application and are known only to the user. Those two now have `password_flag = 1`, so
+they skip the forced-change screen; every other account still lands on it at first
+sign-in. Never assert on `password_flag` in a test — it is mutable state.
+
+Parish → `/login`, platform → `/saas/login`.
 
 | Role | Identifier |
 |---|---|
@@ -100,7 +117,15 @@ Lourdes Trichy (2). Anbiyam names are Tamil — utf8mb4 throughout.
 
 Login (both chains) · dynamic RBAC · password lifecycle · lockout · audit trail ·
 full payment data model · **tenant isolation on reads** · dev/uat/prod profiles ·
-57 tests.
+**shared page layout with the per-church logo header** · 61 tests.
+
+The layout lives in `templates/fragments/layout.html` (`head(title)` and `topbar`).
+`HeaderModelAdvice` puts `${header}` into every view, so a page needs no controller
+change to get one. Logos are files on disk named `<church_id>.png` under
+`app.storage.logo-dir` (default `./data/logos`, gitignored) — **never** mapped as a
+static resource root, because `/logos/2.png` would let anyone enumerate the tenants.
+`/church/logo` resolves the church from the principal instead, so there is no id in the
+URL to tamper with. A missing file falls back to a shipped default.
 
 ## What is NOT built — the next work
 
@@ -109,27 +134,31 @@ full payment data model · **tenant isolation on reads** · dev/uat/prod profile
 2. **Nothing checks permissions.** `@PreAuthorize` appears in one comment. The 275
    permission rows are loaded as authorities at sign-in and never consulted
 3. **`created_user` / `updated_user` are never populated** — no `AuditorAware`
-4. **No page layout fragment** — every module would duplicate head and topbar
-5. **Write-side tenant stamping** — reads are protected, writes are not. A form posting a
+4. **Write-side tenant stamping** — reads are protected, writes are not. A form posting a
    hidden `churchId` would currently be trusted
-6. **No CRUD screens at all** — dashboards are placeholders
-7. **Payment service layer** — the model is complete and tested, but nothing records a
+5. **No CRUD screens at all** — dashboards are placeholders
+6. **No church selector for platform staff.** A `saas_user` has `churchId = null`, so
+   there is no way for them to enter one parish. Blocks the parish-priest module, whose
+   writes need a `church_id`
+7. **Logo upload** — the header displays a logo, but nothing uploads one. Files are placed
+   by hand for now; upload belongs on the church edit screen
+8. **Payment service layer** — the model is complete and tested, but nothing records a
    receipt, allocates, or voids
-8. **No admin unlock screen** — locked accounts need SQL
-9. **Receipt printing** and the Indian amount-in-words utility (lakh/crore, not millions)
-10. **No CI**
+9. **No admin unlock screen** — locked accounts need SQL
+10. **Receipt printing** and the Indian amount-in-words utility (lakh/crore, not millions)
+11. **No CI**
 
-Suggested order: bootstrap admin → JPA auditing → layout fragment → then the first module,
-built with `@PreAuthorize`, audit calls and tenant stamping so it becomes the template.
+Agreed order from here: **church selector** (touches the tenant context, so it stands
+alone) → **Anbiyam module**, which is the template and carries `@PreAuthorize`,
+`AuditorAware` and write-side stamping with it → **Parish Priest module**, which first
+needs a migration making `to_date` nullable and adding `deleted_flag`, a
+`PARISH_PRIEST` value in the `Resource` enum with its permission rows seeded, and an
+entity, since that table is currently unmapped.
 
 ## Git
 
-Remote is `https://github.com/santaigh/church-app.git`. If the GitHub repo is renamed to
-`church-mgmt-app`, update it:
+Remote is `https://github.com/santaigh/church-mgmt-app.git` — the rename is done.
 
-```bash
-git remote set-url origin https://github.com/santaigh/church-mgmt-app.git
-```
-
-Never commit `application-local.yml`. Schema changes go in a migration, never straight
+Never commit `application-local.yml`, and never commit `data/` — it holds uploaded church
+logos, which are runtime data, not source. Schema changes go in a migration, never straight
 into the database — V16 exists solely to repair a constraint applied by hand.
