@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 spring:
   application:
-    name: church-app
+    name: church-mgmt-app
 
   config:
     # Local credentials live in application-local.yml at the PROJECT ROOT -- gitignored,

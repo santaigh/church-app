@@ -5,7 +5,7 @@
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
     <property name="LOG_DIR" value="${LOG_DIR:-logs}"/>
-    <property name="APP_NAME" value="church-app"/>
+    <property name="APP_NAME" value="church-mgmt-app"/>
 
     <!-- %X{correlationId} is populated by CorrelationIdFilter -->
     <property name="CONSOLE_PATTERN"

@@ -1,4 +1,4 @@
-# Church App
+# Church Management App
 
 Multi-tenant parish administration platform. One deployment serves many churches; each
 parish sees only its own data.
