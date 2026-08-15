@@ -12,6 +12,8 @@ public interface FamilyRepository extends JpaRepository<Family, Long> {
 
     List<Family> findByChurchIdAndDeletedFlagFalse(Long churchId);
 
+    long countByChurchIdAndDeletedFlagFalse(Long churchId);
+
     List<Family> findByAnbiyamIdAndDeletedFlagFalse(Long anbiyamId);
 
     /** Family codes restart per parish, so the church must be part of the lookup. */

@@ -2,8 +2,6 @@ package com.church.app.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -36,14 +34,14 @@ public class Church extends AuditableEntity {
     private String churchName;
 
     /**
-     * STATION or SUBSTATION. The column is a plain {@code varchar}, so the enum is
-     * enforced by the application rather than the database -- see {@link ChurchCategory}.
+     * Self-reference: a substation points at its parent parish, and a station has no
+     * parent. That is the whole definition -- there is no category column, because two
+     * places recording the same fact had already disagreed with each other.
+     *
+     * <p>A substation is a place of worship, not an organisation. Members, families,
+     * anbiyams and the parish priest all belong to the station; the station's priest
+     * looks after its substations as well. Nothing tenant-scoped points at a substation.
      */
-    @Enumerated(EnumType.STRING)
-    @Column(name = "category_id", nullable = false, length = 150)
-    private ChurchCategory category;
-
-    /** Self-reference: a substation points at its parent parish. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_church_id")
     private Church parentChurch;
@@ -106,4 +104,9 @@ public class Church extends AuditableEntity {
     @Version
     @Column(name = "version", nullable = false)
     private Long version;
+
+    /** A parish in its own right, as opposed to an outstation chapel under one. */
+    public boolean isStation() {
+        return parentChurch == null;
+    }
 }

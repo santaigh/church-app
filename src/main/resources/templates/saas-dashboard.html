@@ -1,37 +1,111 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="en">
-<head th:replace="~{fragments/layout :: head('Platform dashboard')}"></head>
+<head th:replace="~{fragments/layout :: head('Select a parish')}"></head>
 <body class="theme-platform">
 <header th:replace="~{fragments/layout :: topbar}"></header>
 
-<main class="page">
-    <div class="alert alert-warn" th:if="${usingDefaultPassword}">
-        This account is still using the default password.
-    </div>
-
+<main class="page page-wide">
     <div class="page-head">
-        <h1>Platform dashboard</h1>
+        <h1>Select a parish</h1>
         <p class="muted">
-            This account has no owning church, which is what allows it to reach every parish.
+            This account reaches every parish. Choose one to work inside it — from then on
+            it behaves exactly like a parish account until you switch back.
         </p>
     </div>
 
-    <section class="card">
-        <h2>Session</h2>
-        <dl class="detail">
-            <dt>Name</dt><dd th:text="${displayName}">—</dd>
-            <dt>Role</dt><dd th:text="${roleCode}">—</dd>
-            <dt>Account type</dt><dd th:text="${actorType}">—</dd>
-            <dt>Church scope</dt><dd th:text="${churchId} ?: 'all churches'">all churches</dd>
-        </dl>
-    </section>
+    <div class="split">
 
-    <section class="card">
-        <h2>Permissions granted by this role</h2>
-        <ul class="chips">
-            <li th:each="authority : ${authorities}" th:text="${authority}">PERM_X_Y</li>
-        </ul>
-    </section>
+        <!-- Left: every station, with the town, because two parishes may share a name. -->
+        <nav class="split-list" aria-label="Parishes">
+            <p class="split-list-head">Parishes</p>
+            <a class="church-row" th:each="station : ${stations}"
+               th:href="@{/saas/dashboard(church=${station.id})}"
+               th:classappend="${station.id == selectedId} ? ' on' : ''">
+                <span class="church-row-name" th:text="${station.name}">Church name</span>
+                <span class="church-row-town" th:text="${station.town}">Town</span>
+                <span class="church-row-sub" th:if="${station.substationCount > 0}"
+                      th:text="${station.substationCount} + (${station.substationCount} == 1
+                               ? ' substation' : ' substations')">1 substation</span>
+            </a>
+        </nav>
+
+        <!-- Right: the chosen parish in full. -->
+        <section class="split-detail">
+
+            <div class="empty" th:if="${detail == null}">
+                <p class="empty-mark" aria-hidden="true">⛪</p>
+                <p>Select a parish on the left to see its details.</p>
+            </div>
+
+            <div th:if="${detail != null}">
+                <div class="detail-head">
+                    <div>
+                        <h2 th:text="${detail.name}">Church name</h2>
+                        <p class="muted" th:text="${detail.town}">Town</p>
+                    </div>
+                    <form th:action="@{/saas/enter-church}" method="post">
+                        <input type="hidden" name="churchId" th:value="${detail.id}">
+                        <button class="btn" type="submit">Enter this parish →</button>
+                    </form>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat"><span class="stat-k">Members</span><span class="stat-v" th:text="${detail.members}">0</span></div>
+                    <div class="stat"><span class="stat-k">Families</span><span class="stat-v" th:text="${detail.families}">0</span></div>
+                    <div class="stat"><span class="stat-k">Anbiyam</span><span class="stat-v" th:text="${detail.anbiyams}">0</span></div>
+                    <div class="stat"><span class="stat-k">Substations</span><span class="stat-v" th:text="${#lists.size(detail.substations)}">0</span></div>
+                </div>
+
+                <section class="card">
+                    <h3>Clergy serving here</h3>
+                    <p class="alert alert-warn" th:if="${#lists.isEmpty(detail.clergy)}">
+                        No parish priest recorded for this parish.
+                    </p>
+                    <ul class="sub-list" th:unless="${#lists.isEmpty(detail.clergy)}">
+                        <li th:each="person : ${detail.clergy}">
+                            <span class="sub-name" th:text="${person.name}">Fr. Name</span>
+                            <span class="sub-where">
+                                <span th:text="${person.role}">Parish Priest</span> ·
+                                serving since <span th:text="${person.since}">date</span>
+                            </span>
+                        </li>
+                    </ul>
+                    <p class="muted note">
+                        An open posting — no end date — is a current one. Substations have no
+                        clergy of their own; this parish's priest looks after them.
+                    </p>
+                </section>
+
+                <section class="card">
+                    <h3>Parish details</h3>
+                    <dl class="detail">
+                        <dt>Diocese</dt><dd th:text="${detail.diocese} ?: '—'">—</dd>
+                        <dt>Address</dt><dd th:text="${detail.address} ?: '—'">—</dd>
+                        <dt>Phone</dt><dd th:text="${detail.phone} ?: '—'">—</dd>
+                        <dt>Email</dt><dd th:text="${detail.email} ?: '—'">—</dd>
+                        <dt>Established</dt><dd th:text="${detail.establishedDate} ?: '—'">—</dd>
+                    </dl>
+                </section>
+
+                <section class="card">
+                    <h3>Substations</h3>
+                    <p class="muted" th:if="${#lists.isEmpty(detail.substations)}">
+                        This parish has no substations.
+                    </p>
+                    <ul class="sub-list" th:unless="${#lists.isEmpty(detail.substations)}">
+                        <li th:each="sub : ${detail.substations}">
+                            <span class="sub-name" th:text="${sub.name}">Chapel</span>
+                            <span class="sub-where" th:text="${sub.address} ?: ${sub.location}">Where</span>
+                        </li>
+                    </ul>
+                    <p class="muted note">
+                        A substation is a place of worship under this parish. Members, families,
+                        anbiyams and the priest all belong to the parish itself.
+                    </p>
+                </section>
+            </div>
+        </section>
+    </div>
 </main>
 </body>
 </html>

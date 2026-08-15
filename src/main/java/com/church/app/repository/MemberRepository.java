@@ -40,6 +40,12 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     List<Member> findByChurchIdAndDeletedFlagFalse(Long churchId);
 
+    /**
+     * Counts one church explicitly, for the platform user browsing parishes they have
+     * not entered. {@code count()} would answer for the current tenant scope instead.
+     */
+    long countByChurchIdAndDeletedFlagFalse(Long churchId);
+
     List<Member> findByFamilyIdAndDeletedFlagFalse(Long familyId);
 
     boolean existsByEmailIgnoreCase(String email);

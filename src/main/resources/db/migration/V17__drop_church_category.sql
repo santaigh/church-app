@@ -1,0 +1,21 @@
+-- ---------------------------------------------------------------------------
+-- V17: A church is a substation because it has a parent, not because a column
+-- says so.
+--
+-- category_id held STATION or SUBSTATION, which duplicated the fact already
+-- carried by parent_church_id -- and the two had already drifted apart in the
+-- sample data: Our Lady of Lourdes was marked SUBSTATION while its
+-- parent_church_id was NULL, making it a substation of nothing.
+--
+-- From here:
+--     parent_church_id IS NULL      -> a station (a parish in its own right)
+--     parent_church_id IS NOT NULL  -> a substation of that station
+--
+-- A substation is a place of worship, not an organisation: the station holds
+-- the parish priest, the members, the families and the anbiyams, and its priest
+-- looks after the substations too. Nothing tenant-scoped ever points at a
+-- substation, which is why tenant isolation stays flat -- there is nothing
+-- inside a substation to isolate.
+-- ---------------------------------------------------------------------------
+
+ALTER TABLE church DROP COLUMN category_id;

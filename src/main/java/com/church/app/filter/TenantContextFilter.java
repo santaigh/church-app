@@ -1,6 +1,7 @@
 package com.church.app.filter;
 
 import com.church.app.security.AppUserPrincipal;
+import com.church.app.security.SelectedChurch;
 import com.church.app.security.TenantContext;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Establishes the tenant scope for the request from the signed-in principal.
@@ -27,12 +29,18 @@ public class TenantContextFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(TenantContextFilter.class);
 
+    private final SelectedChurch selectedChurch;
+
+    public TenantContextFilter(SelectedChurch selectedChurch) {
+        this.selectedChurch = selectedChurch;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
         try {
-            applyScope();
+            applyScope(request);
             filterChain.doFilter(request, response);
         } finally {
             // Threads are pooled. Without this, the next request handled by this thread
@@ -41,7 +49,7 @@ public class TenantContextFilter extends OncePerRequestFilter {
         }
     }
 
-    private void applyScope() {
+    private void applyScope(HttpServletRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
                 || !(authentication.getPrincipal() instanceof AppUserPrincipal principal)) {
@@ -51,6 +59,16 @@ public class TenantContextFilter extends OncePerRequestFilter {
         }
 
         if (principal.isPlatformUser()) {
+            // A platform user who has entered a parish is scoped to it exactly as a
+            // parish user would be. Without this the branding would say one church while
+            // the queries still returned all of them -- the worst of both.
+            Optional<SelectedChurch.Selection> selection = selectedChurch.from(request);
+            if (selection.isPresent()) {
+                TenantContext.setChurch(selection.get().churchId());
+                log.debug("Tenant scope: church {} for platform user '{}'",
+                        selection.get().churchId(), principal.getUsername());
+                return;
+            }
             TenantContext.setPlatformWide();
             log.debug("Tenant scope: platform-wide for '{}'", principal.getUsername());
             return;

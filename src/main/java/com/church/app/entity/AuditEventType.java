@@ -35,6 +35,14 @@ public enum AuditEventType {
     PERMISSION_GRANTED("Permission granted to a role"),
     PERMISSION_REVOKED("Permission revoked from a role"),
 
+    // ---- platform staff working inside a parish ---------------------------
+    /**
+     * A platform account narrowed itself to one parish. Worth recording: from here its
+     * reads and writes are scoped to that church, and the trail should say which.
+     */
+    CHURCH_ENTERED("Platform user entered a parish"),
+    CHURCH_EXITED("Platform user left a parish"),
+
     // ---- access denied ----------------------------------------------------
     ACCESS_DENIED("Access denied");
 

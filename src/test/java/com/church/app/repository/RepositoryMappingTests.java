@@ -108,14 +108,20 @@ class RepositoryMappingTests {
                 .findByEmailOrMobile("superadmin@churchapp.local", null).orElseThrow();
         assertEquals("SaaSSAdmin", admin.getRole().getRoleCode());
         assertEquals(RoleLevel.SAAS, admin.getRole().getRoleLevel());
-        assertTrue(admin.isUsingDefaultPassword());
+        // password_flag is deliberately not asserted: it changes the moment anyone signs
+        // in through the running application and sets their own password, which is
+        // exactly what happened to this account. Mutable state makes a brittle fixture.
         assertEquals(3, saasUserRepository.count());
     }
 
     @Test
     @DisplayName("tenant scoping: each church sees only its own members and families")
     void dataIsScopedPerChurch() {
-        assertEquals(3, churchRepository.findByDeletedFlagFalseOrderByChurchNameAsc().size());
+        // Four church rows, but only three parishes: St. Anthony's Chapel is a substation
+        // of St. Mary's and holds no members, families or anbiyams of its own.
+        assertEquals(4, churchRepository.findByDeletedFlagFalseOrderByChurchNameAsc().size());
+        assertEquals(3, churchRepository
+                .findByParentChurchIsNullAndDeletedFlagFalseOrderByChurchNameAsc().size());
 
         assertEquals(6, memberRepository.findByChurchIdAndDeletedFlagFalse(1L).size());
         assertEquals(3, memberRepository.findByChurchIdAndDeletedFlagFalse(2L).size());

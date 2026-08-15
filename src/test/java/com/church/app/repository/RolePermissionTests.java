@@ -1,7 +1,6 @@
 package com.church.app.repository;
 
 import com.church.app.entity.Church;
-import com.church.app.entity.ChurchCategory;
 import com.church.app.entity.Operation;
 import com.church.app.entity.Resource;
 import com.church.app.entity.Role;
@@ -48,11 +47,32 @@ class RolePermissionTests {
     }
 
     @Test
-    @DisplayName("super admins get every operation on every resource")
+    @DisplayName("super admins get every operation on every resource V11 generated")
     void superAdminsGetEverything() {
-        int expected = Resource.values().length * Operation.values().length;
-        assertEquals(expected, rolePermissionRepository.countByRoleId(roleId("SaaSSAdmin")));
-        assertEquals(expected, rolePermissionRepository.countByRoleId(roleId("AppSA")));
+        // PARISH_PRIEST is the one exception and is counted separately below: V20 seeds
+        // it narrowly on purpose, because appointing clergy is a diocese-level act.
+        int broad = (Resource.values().length - 1) * Operation.values().length;
+
+        assertEquals(broad + 4, rolePermissionRepository.countByRoleId(roleId("SaaSSAdmin")),
+                "every resource but PARISH_PRIEST, plus VIEW/ADD/EDIT/DELETE on that one");
+        assertEquals(broad + 1, rolePermissionRepository.countByRoleId(roleId("AppSA")),
+                "every resource but PARISH_PRIEST, plus VIEW only on that one");
+    }
+
+    @Test
+    @DisplayName("appointing clergy is reserved to the platform, and parishes only look")
+    void clergyAppointmentIsDioceseLevel() {
+        for (String parishRole : List.of("AppSA", "AppAdmin", "AppUser")) {
+            assertEquals(Set.of(Operation.VIEW), operationsFor(parishRole, Resource.PARISH_PRIEST),
+                    parishRole + " may see its clergy but never change them");
+        }
+
+        assertTrue(operationsFor("SaaSSAdmin", Resource.PARISH_PRIEST)
+                .containsAll(Set.of(Operation.VIEW, Operation.ADD, Operation.EDIT, Operation.DELETE)));
+
+        Set<Operation> saasAdmin = operationsFor("SaaSAdmin", Resource.PARISH_PRIEST);
+        assertTrue(saasAdmin.containsAll(Set.of(Operation.VIEW, Operation.ADD, Operation.EDIT)));
+        assertFalse(saasAdmin.contains(Operation.DELETE), "DELETE stays with the super admin");
     }
 
     @Test
@@ -109,14 +129,18 @@ class RolePermissionTests {
     }
 
     @Test
-    @DisplayName("church.category_id maps onto the ChurchCategory enum after V10")
-    void churchCategoryNormalised() {
+    @DisplayName("a substation is one with a parent; everything else is a station")
+    void stationsAndSubstations() {
         List<Church> churches = churchRepository.findByDeletedFlagFalseOrderByChurchNameAsc();
-        assertEquals(3, churches.size());
-        // V7 wrote 'PARISH', which is not an enum value; V10 normalised it to STATION.
-        long stations = churches.stream().filter(c -> c.getCategory() == ChurchCategory.STATION).count();
-        long substations = churches.stream().filter(c -> c.getCategory() == ChurchCategory.SUBSTATION).count();
-        assertEquals(2, stations);
-        assertEquals(1, substations);
+        assertEquals(4, churches.size());
+
+        // V17 dropped category_id, so the parent link is the only definition left --
+        // which is the point: the two used to disagree with each other.
+        assertEquals(3, churches.stream().filter(Church::isStation).count());
+
+        List<Church> substations = churches.stream().filter(c -> !c.isStation()).toList();
+        assertEquals(1, substations.size());
+        assertEquals("St. Anthony's Chapel", substations.get(0).getChurchName());
+        assertEquals("St. Mary's Cathedral", substations.get(0).getParentChurch().getChurchName());
     }
 }

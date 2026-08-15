@@ -398,12 +398,135 @@ body.theme-platform .btn:hover { background: #163a5a; }
 .profile-item:hover { background: var(--bg); }
 .profile-item-danger { color: var(--danger); }
 
+/* ------------------------------------------------------------- module menu */
+
+.menubar {
+    border-top: 1px solid var(--border);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: .15rem;
+    max-width: 60rem;
+    margin: 0 auto;
+    overflow-x: auto;
+}
+
+.menubar a,
+.menubar .soon {
+    padding: .6rem .85rem;
+    font-size: .875rem;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    text-decoration: none;
+    color: var(--text);
+}
+
+.menubar a.on { border-bottom-color: var(--accent); color: var(--accent); font-weight: 600; }
+.menubar a:hover { color: var(--accent); }
+
+/* Not yet built: visible so the shape of what is coming stays legible, inert so
+   nobody clicks into a page that does not exist. */
+.menubar .soon { color: #a8adb5; cursor: default; }
+
+.menubar-switch { margin-left: auto; color: var(--accent); font-weight: 600; }
+
+/* ------------------------------------------------------ parish selector */
+
+.page-wide { max-width: 72rem; }
+
+.split { display: grid; grid-template-columns: 19rem 1fr; gap: 1.25rem; align-items: start; }
+
+.split-list {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .4rem;
+    position: sticky;
+    top: 5.5rem;
+}
+
+.split-list-head {
+    font-size: .65rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: .35rem .75rem .5rem;
+}
+
+.church-row {
+    display: block;
+    padding: .6rem .75rem;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    border-left: 3px solid transparent;
+}
+
+.church-row:hover { background: var(--bg); }
+.church-row.on { background: var(--accent-soft); border-left-color: var(--accent); }
+.church-row-name { display: block; font-weight: 600; font-size: .9rem; }
+.church-row-town { display: block; font-size: .78rem; color: var(--muted); }
+.church-row-sub { display: block; font-size: .7rem; color: var(--accent); margin-top: .15rem; }
+
+.split-detail { min-width: 0; }
+
+.detail-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.detail-head h2 { margin: 0; font-size: 1.3rem; }
+.detail-head form { margin: 0; }
+.detail-head .muted { margin: .1rem 0 0; }
+
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1.25rem; }
+
+.stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: .75rem .9rem;
+}
+
+.stat-k { display: block; font-size: .65rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.stat-v { display: block; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25; }
+
+.sub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+.sub-list li { padding: .55rem .75rem; background: var(--bg); border-radius: 8px; }
+.sub-name { display: block; font-weight: 600; font-size: .9rem; }
+.sub-where { display: block; font-size: .78rem; color: var(--muted); }
+
+.note { margin-top: .9rem; padding-top: .75rem; border-top: 1px solid var(--border); }
+
+.empty {
+    background: var(--card);
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    padding: 3.5rem 1.5rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+.empty-mark { font-size: 2rem; margin: 0 0 .5rem; opacity: .5; }
+
 /* Payment screens are mobile-first; everything else must simply stay usable. */
+@media (max-width: 60rem) {
+    .split { grid-template-columns: 1fr; }
+    .split-list { position: static; }
+    .stat-row { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 40rem) {
     .topbar-inner { padding: .5rem .9rem; gap: .6rem; }
     .topbar-church { max-width: 9rem; font-size: .85rem; }
     .profile-who { display: none; }
     .topbar-sep { display: none; }
+    .menubar { padding: 0 .9rem; }
+    .detail-head { flex-direction: column; }
 }
 
 .page { max-width: 60rem; margin: 0 auto; padding: 1.5rem; }

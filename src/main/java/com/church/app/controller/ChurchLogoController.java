@@ -1,7 +1,6 @@
 package com.church.app.controller;
 
-import com.church.app.security.AppUserPrincipal;
-import com.church.app.security.CurrentUser;
+import com.church.app.security.TenantContext;
 import com.church.app.service.ChurchLogoService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
@@ -30,8 +29,10 @@ public class ChurchLogoController {
 
     @GetMapping("/church/logo")
     public ResponseEntity<Resource> logo(WebRequest request) {
-        AppUserPrincipal principal = CurrentUser.principalOrNull();
-        Long churchId = principal == null ? null : principal.getChurchId();
+        // The tenant scope, not the principal: a platform user working inside a parish
+        // has no church of their own, and must still see that parish's crest. The scope
+        // is the one place that already knows which church this request belongs to.
+        Long churchId = TenantContext.currentChurchId().orElse(null);
 
         ChurchLogoService.ChurchLogo logo = churchLogoService.resolve(churchId);
 

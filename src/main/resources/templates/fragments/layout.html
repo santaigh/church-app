@@ -3,7 +3,7 @@
 <!--/*
     The shared page shell.
 
-    Every signed-in page uses these two fragments instead of repeating its own head and
+    Every signed-in page uses these fragments instead of repeating its own head and
     header. Both dashboards had already grown their own copy of the topbar, which is the
     duplication this exists to stop.
 
@@ -12,7 +12,9 @@
         <header th:replace="~{fragments/layout :: topbar}"></header>
 
     The header reads ${header}, supplied to every view by HeaderModelAdvice, so a page
-    needs no controller change to get it.
+    needs no controller change to get it. The module menu lives inside the same fragment
+    rather than beside it -- a page that remembered the header but forgot the menu would
+    lose its navigation with nothing to catch it.
 */-->
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
@@ -26,19 +28,21 @@
 <header class="topbar" th:fragment="topbar" th:if="${header != null}">
     <div class="topbar-inner">
 
-        <!--/* Left: the parish crest, or the wordmark for platform staff, who have no church. */-->
-        <a class="topbar-identity" th:href="@{/dashboard}" th:unless="${header.platform}">
+        <!--/* Left: the parish crest once inside a church; the wordmark until then. */-->
+        <a class="topbar-identity" th:href="@{/dashboard}" th:if="${header.insideChurch}">
             <img class="topbar-logo" th:src="@{/church/logo}" alt="" width="40" height="40">
         </a>
-        <span class="topbar-identity" th:if="${header.platform}">
+        <span class="topbar-identity" th:unless="${header.insideChurch}">
             <span class="topbar-wordmark">Church<strong>App</strong></span>
             <span class="topbar-tag">Platform</span>
         </span>
 
         <!--/* Right: church name, then the profile menu. */-->
         <div class="topbar-actions">
-            <span class="topbar-church" th:unless="${header.platform}"
+            <span class="topbar-church" th:if="${header.insideChurch}"
                   th:text="${header.churchName}">Parish name</span>
+            <!--/* Platform staff working inside a parish should never forget they are. */-->
+            <span class="topbar-tag" th:if="${header.platform and header.insideChurch}">Platform</span>
             <span class="topbar-sep" aria-hidden="true"></span>
 
             <details class="profile" data-menu>
@@ -70,6 +74,21 @@
             </details>
         </div>
     </div>
+
+    <!--/*
+        Module menu. Only inside a parish: a platform user who has chosen no church has
+        nothing to navigate to yet. Modules not yet built are shown but inert, so the
+        shape of what is coming stays visible.
+    */-->
+    <nav class="menubar" th:if="${header.insideChurch}">
+        <a th:href="@{/dashboard}" class="on">Dashboard</a>
+        <span class="soon">Anbiyam</span>
+        <span class="soon">Parish Priest</span>
+        <span class="soon">Members</span>
+        <span class="soon">Families</span>
+        <span class="soon">Payments</span>
+        <a class="menubar-switch" th:if="${header.platform}" th:href="@{/saas/dashboard}">Switch church</a>
+    </nav>
 </header>
 
 </body>

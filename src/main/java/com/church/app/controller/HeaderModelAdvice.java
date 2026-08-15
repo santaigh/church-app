@@ -2,8 +2,11 @@ package com.church.app.controller;
 
 import com.church.app.security.AppUserPrincipal;
 import com.church.app.security.CurrentUser;
+import com.church.app.security.SelectedChurch;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import java.util.Optional;
 
 /**
  * Puts everything the page header needs into the model of every view.
@@ -18,6 +21,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class HeaderModelAdvice {
 
+    private final SelectedChurch selectedChurch;
+
+    public HeaderModelAdvice(SelectedChurch selectedChurch) {
+        this.selectedChurch = selectedChurch;
+    }
+
     @ModelAttribute("header")
     public HeaderInfo header() {
         AppUserPrincipal principal = CurrentUser.principalOrNull();
@@ -26,11 +35,24 @@ public class HeaderModelAdvice {
         }
 
         boolean platform = principal.isPlatformUser();
+        Optional<SelectedChurch.Selection> selection = platform
+                ? selectedChurch.current()
+                : Optional.empty();
+
+        // A parish user is always inside their own church. A platform user is inside one
+        // only after choosing it -- until then there is no crest, no name and no menu,
+        // because there is no parish to show them for.
+        String churchName = platform
+                ? selection.map(SelectedChurch.Selection::churchName).orElse(null)
+                : principal.getChurchName();
+        boolean insideChurch = churchName != null;
+
         return new HeaderInfo(
                 principal.getDisplayName(),
                 principal.getRoleCode(),
-                principal.getChurchName(),
+                churchName,
                 platform,
+                insideChurch,
                 // The two chains have separate URLs for these; the template should not
                 // have to know which one it is rendering under.
                 platform ? "/saas/logout" : "/logout",
@@ -38,13 +60,15 @@ public class HeaderModelAdvice {
     }
 
     /**
-     * @param churchName null for platform users, who are not scoped to one parish
-     * @param platform   true for a {@code saas_user} account, which shows no church logo
+     * @param churchName   null for a platform user who has not entered a parish
+     * @param platform     true for a {@code saas_user} account
+     * @param insideChurch whether there is a parish context: drives the crest and the menu
      */
     public record HeaderInfo(String displayName,
                              String roleCode,
                              String churchName,
                              boolean platform,
+                             boolean insideChurch,
                              String logoutUrl,
                              String changePasswordUrl) {
     }

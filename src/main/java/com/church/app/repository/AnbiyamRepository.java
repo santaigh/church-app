@@ -10,4 +10,6 @@ import java.util.List;
 public interface AnbiyamRepository extends JpaRepository<Anbiyam, Long> {
 
     List<Anbiyam> findByChurchIdAndDeletedFlagFalseOrderByAnbiyamNameAsc(Long churchId);
+
+    long countByChurchIdAndDeletedFlagFalse(Long churchId);
 }

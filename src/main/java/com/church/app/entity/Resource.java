@@ -19,6 +19,7 @@ public enum Resource {
     MEMBER("Member Management"),
     FAMILY("Family Details"),
     ANBIYAM("Anbiyam Management"),
+    PARISH_PRIEST("Parish Priest & Clergy"),
     ANBIYAM_MAPPING("Anbiyam Mapping"),
     PAYMENT("Payments"),
     DASHBOARD("Dashboard"),

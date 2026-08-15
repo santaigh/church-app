@@ -70,10 +70,31 @@ Starter names changed from Boot 3. Tutorials will not match:
 - **Parish priest is an appointment history**: one row per church posting, `to_date IS
   NULL` means currently serving. `active_flag` is deliberately NOT used on that table —
   two columns answering "who is current" can disagree, with nothing to catch it
+- **Three clergy roles share that table**: `PARISH_PRIEST` · `ASSISTANT_PRIEST` ·
+  `BROTHER` (a final-year seminarian, not ordained). Exactly one Parish Priest serves at
+  a time; assistants and brothers are optional and may be several. The table keeps the
+  name `parish_priest` — renaming was considered and declined
 - **Appointing a priest auto-closes the open row** at the new start date, so a church can
-  never show two current priests. Enforced in the service: MySQL has no partial unique index
-- **Only SaaSSAdmin and SaaSAdmin may appoint a priest.** Parish staff see who their
-  priest is but cannot change it — an appointment is a diocese-level act
+  never show two current priests. Enforced in the service: MySQL has no partial unique
+  index. Auto-closing applies to `PARISH_PRIEST` only — assistants must not close each
+  other, since a parish may have several at once
+- **A parish must have a Parish Priest, but it is not enforced strictly.** Real parishes
+  have gaps between postings, so ending a posting without naming a successor is allowed;
+  the parish shows a "no parish priest recorded" warning until one is appointed
+- **Only SaaSSAdmin and SaaSAdmin may appoint any clergy** — parish priest, assistant or
+  brother. Parish staff see who serves them but cannot change it: an appointment is a
+  diocese-level act
+- **`member.catagory` means the member's position in the family**, not their job:
+  `HEAD · SPOUSE · CHILD · FATHER · MOTHER`, as a `FamilyRole` Java enum (not a table,
+  not yaml — the values are queried in code, so they should be compile-checked). `HEAD`
+  covers both Kudumba Thalaivan and Thalaivi; `gender` distinguishes them, and likewise
+  turns `CHILD` into son or daughter, so no gendered values are needed. **One HEAD per
+  family**, enforced in the service. Occupation is separate and already exists, on
+  `member_ext.occupation`
+- **English-only UI now, Tamil later.** From the Anbiyam module onward screen text uses
+  `MessageSource` keys rather than literals, so Tamil is one `messages_ta.properties`
+  away with no code change. Interface text is the only thing this touches — member and
+  anbiyam names are data, already Tamil, already utf8mb4
 
 ## Traps discovered the hard way
 
@@ -92,6 +113,15 @@ Starter names changed from Boot 3. Tutorials will not match:
 - **MySQL reports `TINYINT(1)` as `BIT`** — flag columns map to `boolean`, not `int`
 - **pptxgenjs**: negative width/height on a shape produces a file PowerPoint refuses to
   open, and the schema validator does not catch it
+- **`member.catagory` is spelled wrong and holds the wrong data.** The seed put parish
+  duties and occupations in it — `PRIEST`, `ANIMATOR`, `SECRETARY`, `STUDENT`,
+  `HOMEMAKER`, `TEACHER` — none of which is a family position. The member module has to
+  remap it and rename the column to `family_role`. **Open question:** parish duties
+  (priest, secretary, animator) then have nowhere to live; the user is checking whether
+  they are needed at all
+- **Tamil on the 58mm thermal printer** may not be possible as text — those printers
+  carry a built-in character set. Receipts may have to be rendered as an image. Worth
+  settling before Tamil goes live, not after
 
 ## Sample accounts
 
