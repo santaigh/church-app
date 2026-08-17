@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Generate dues')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page page-narrow">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Done.</div>
+    <div class="alert alert-error" th:if="${flashError}" th:text="${flashError}">Error.</div>
+
+    <div class="page-head">
+        <h1 th:text="#{payment.generateDues}">Generate dues</h1>
+        <p class="muted" th:text="#{payment.generateDues.hint}">
+            Creates one month's contribution for every family that has started paying.
+        </p>
+    </div>
+
+    <section class="card card-form">
+        <form th:action="@{/payments/dues}" method="post">
+            <div class="field">
+                <label for="period" th:text="#{payment.period}">Month</label>
+                <input type="month" id="period" name="period" th:value="${period}" required autofocus>
+            </div>
+
+            <!-- Worth saying on the screen: the fear is always double-charging. -->
+            <p class="field-hint" th:text="#{payment.generateDues.safe}">
+                Running this twice is safe. A family that already has a due for the month is
+                skipped, never charged again.
+            </p>
+
+            <div class="form-actions">
+                <button class="btn" type="submit" th:text="#{payment.generate}">Generate</button>
+                <a class="btn btn-quiet" th:href="@{/payments}" th:text="#{action.cancel}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

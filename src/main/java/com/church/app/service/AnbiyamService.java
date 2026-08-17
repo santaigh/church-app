@@ -72,19 +72,49 @@ public class AnbiyamService {
 
     @Transactional(readOnly = true)
     public List<AnbiyamRow> list() {
-        return anbiyamRepository
-                .findByChurchIdAndDeletedFlagFalseOrderByAnbiyamNameAsc(currentChurchId())
-                .stream()
+        Long churchId = currentChurchId();
+        List<Anbiyam> anbiyams = anbiyamRepository
+                .findByChurchIdAndDeletedFlagFalseOrderByAnbiyamNameAsc(churchId);
+
+        // Three lookups for the list rather than three per row. A parish has few anbiyam,
+        // so this was never going to hurt -- but the same shape at six hundred families
+        // did, and one pattern beats two.
+        java.util.Map<Long, Long> familyCounts = counts(familyRepository.countByAnbiyamForChurch(churchId));
+        java.util.Map<Long, Long> memberCounts = counts(memberRepository.countByAnbiyamForChurch(churchId));
+        java.util.Map<Long, String> animators = animatorNames(anbiyams);
+
+        return anbiyams.stream()
                 .map(anbiyam -> new AnbiyamRow(
                         anbiyam.getId(),
                         anbiyam.getAnbiyamName(),
                         anbiyam.getAreaDescription(),
                         anbiyam.getHeadMemberId(),
-                        animatorName(anbiyam.getHeadMemberId()),
+                        animators.get(anbiyam.getHeadMemberId()),
                         anbiyam.isActiveFlag(),
-                        familyRepository.countByAnbiyamIdAndDeletedFlagFalse(anbiyam.getId()),
-                        memberRepository.countByAnbiyamIdAndDeletedFlagFalse(anbiyam.getId())))
+                        familyCounts.getOrDefault(anbiyam.getId(), 0L),
+                        memberCounts.getOrDefault(anbiyam.getId(), 0L)))
                 .toList();
+    }
+
+    private static java.util.Map<Long, Long> counts(
+            List<com.church.app.repository.MemberRepository.GroupCount> rows) {
+        return rows.stream().collect(java.util.stream.Collectors.toMap(
+                com.church.app.repository.MemberRepository.GroupCount::getGroupId,
+                com.church.app.repository.MemberRepository.GroupCount::getTotal));
+    }
+
+    private java.util.Map<Long, String> animatorNames(List<Anbiyam> anbiyams) {
+        List<Long> ids = anbiyams.stream()
+                .map(Anbiyam::getHeadMemberId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        if (ids.isEmpty()) {
+            return java.util.Map.of();
+        }
+        return memberRepository.findAllById(ids).stream()
+                .filter(member -> !member.isDeletedFlag())
+                .collect(java.util.stream.Collectors.toMap(
+                        member -> member.getId(), member -> member.getDisplayName()));
     }
 
     /**

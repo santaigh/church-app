@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Receipt')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page page-narrow">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Saved.</div>
+    <div class="alert alert-error" th:if="${flashError}" th:text="${flashError}">Error.</div>
+
+    <div class="page-head list-head">
+        <div>
+            <h1>
+                <span th:text="${receipt.receiptNo}">R-2026-0003</span>
+                <span class="pill pill-off" th:if="${receipt.voided}" th:text="#{payment.void}">Void</span>
+            </h1>
+            <p class="muted" th:text="${@dates.format(receipt.receiptDate)}">01-06-2026</p>
+        </div>
+        <div class="form-actions">
+            <a class="btn" th:unless="${receipt.voided}"
+               th:href="@{/payments/{id}/print(id=${receipt.id})}" th:text="#{payment.print}">Print</a>
+            <a class="btn btn-quiet" th:href="@{/payments}" th:text="#{action.back}">Back</a>
+        </div>
+    </div>
+
+    <div class="alert alert-warn" th:if="${receipt.voided}">
+        <strong th:text="#{payment.voided}">This receipt has been cancelled.</strong>
+        <span th:text="${receipt.voidReason}">Reason</span>
+    </div>
+
+    <section class="card">
+        <dl class="fields">
+            <div><dt th:text="#{payment.family}">Family</dt>
+                <dd th:text="${receipt.familyName} + ' (' + ${receipt.familyCode} + ')'">Family</dd></div>
+            <div><dt th:text="#{payment.field.amount}">Amount</dt>
+                <dd th:text="'₹' + ${#numbers.formatDecimal(receipt.amount, 1, 'COMMA', 2, 'POINT')}">₹500.00</dd></div>
+            <div><dt th:text="#{payment.field.mode}">Paid by</dt><dd th:text="${receipt.mode}">Cash</dd></div>
+            <div><dt th:text="#{payment.field.reference}">Reference</dt>
+                <dd th:text="${receipt.referenceNo} ?: '—'">—</dd></div>
+            <div><dt th:text="#{payment.collector}">Received by</dt>
+                <dd th:text="${receipt.collector} ?: '—'">—</dd></div>
+            <div><dt th:text="#{payment.field.remarks}">Remarks</dt>
+                <dd th:text="${receipt.remarks} ?: '—'">—</dd></div>
+        </dl>
+
+        <p class="in-words" th:text="${@amountInWords.of(receipt.amount)}">
+            Rupees Five Hundred Only
+        </p>
+    </section>
+
+    <!-- Which months this money settled: the answer to "what was this for?". -->
+    <section class="card">
+        <h2 th:text="#{payment.settled}">Months settled</h2>
+        <p class="muted" th:if="${#lists.isEmpty(receipt.settled)}" th:text="#{payment.settledNone}">
+            Nothing was allocated.
+        </p>
+        <ul class="due-list" th:unless="${#lists.isEmpty(receipt.settled)}">
+            <li th:each="s : ${receipt.settled}">
+                <span th:text="${s.period}">January 2026</span>
+                <span class="due-amount"
+                      th:text="'₹' + ${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')}">₹300.00</span>
+            </li>
+        </ul>
+    </section>
+
+    <!-- Correcting an amount is void-and-reissue: the family is holding a printed slip,
+         and editing the record behind it would leave the two disagreeing. -->
+    <section class="card" th:if="${!receipt.voided and header.can('PERM_PAYMENT_DELETE')}">
+        <h2 th:text="#{payment.correct}">Correct this receipt</h2>
+        <p class="muted" th:text="#{payment.correct.hint}">
+            A receipt is never edited or deleted. It is cancelled with a reason and reissued.
+        </p>
+        <div class="form-actions">
+            <a class="btn btn-quiet" th:href="@{/payments/{id}/reissue(id=${receipt.id})}"
+               th:text="#{payment.reissue}">Void and reissue</a>
+        </div>
+
+        <form th:action="@{/payments/{id}/void(id=${receipt.id})}" method="post" class="void-form">
+            <label for="reason" th:text="#{payment.voidReason}">Reason for cancelling</label>
+            <input type="text" id="reason" name="reason" required>
+            <button class="btn btn-danger" type="submit" th:text="#{payment.voidOnly}">
+                Void without reissuing
+            </button>
+        </form>
+    </section>
+</main>
+</body>
+</html>

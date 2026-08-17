@@ -591,6 +591,47 @@ body.theme-platform .btn:hover { background: #163a5a; }
 .filter-count { font-size: .8rem; color: var(--muted); margin: .6rem 0 0; }
 
 .btn-small { padding: .28rem .6rem; font-size: .78rem; }
+.btn-danger { background: var(--danger); }
+.btn-danger:hover { background: #8f1e17; }
+
+/* ------------------------------------------------------- collecting money */
+
+/* This screen is worked standing up, on a phone, so it stays narrow and the
+   targets stay large. Payment screens are mobile-first by decision. */
+.page-narrow { max-width: 34rem; }
+
+.search-bar { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+.search-bar input { flex: 1; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+
+.family-cards { display: flex; flex-direction: column; gap: .5rem; }
+
+.family-card {
+    display: block;
+    padding: .8rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text);
+}
+
+.family-card:hover { border-color: var(--accent); }
+.family-card-name { display: block; font-weight: 600; }
+.family-card-meta { display: block; font-size: .8rem; color: var(--muted); }
+.family-card-owed { display: inline-block; margin-top: .35rem; font-size: .8rem; font-weight: 600; color: var(--danger); }
+.family-card-clear { display: inline-block; margin-top: .35rem; font-size: .8rem; color: #276b46; }
+
+.owed-total { font-size: 2rem; font-weight: 600; margin: 0 0 .75rem; font-variant-numeric: tabular-nums; }
+
+.due-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .3rem; }
+.due-list li { display: flex; justify-content: space-between; padding: .4rem .6rem; background: var(--bg); border-radius: 6px; font-size: .9rem; }
+.due-amount { font-variant-numeric: tabular-nums; font-weight: 600; }
+
+.in-words { margin: .9rem 0 0; padding-top: .75rem; border-top: 1px solid var(--border); font-style: italic; color: var(--muted); font-size: .875rem; }
+
+.void-form { margin-top: 1rem; display: flex; flex-direction: column; gap: .5rem; }
+.void-form input { padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
+.void-form button { align-self: flex-start; }
 .empty-cell { text-align: center; color: var(--muted); padding: 1.5rem !important; }
 
 /* ------------------------------------------------------------------ paging */

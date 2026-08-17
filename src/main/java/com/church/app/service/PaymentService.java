@@ -5,6 +5,7 @@ import com.church.app.dto.PaymentForm;
 import com.church.app.entity.AuditEventType;
 import com.church.app.entity.Church;
 import com.church.app.entity.DueStatus;
+import com.church.app.entity.DueType;
 import com.church.app.entity.Family;
 import com.church.app.entity.Operation;
 import com.church.app.entity.Payment;
@@ -105,6 +106,218 @@ public class PaymentService {
     }
 
     public record DueGenerationResult(int created, int skipped, YearMonth period) {
+    }
+
+    /** A family as the collection screen needs it: who they are and what they owe. */
+    public record FamilyDues(Long familyId,
+                             String familyCode,
+                             String familyName,
+                             String anbiyamName,
+                             String headName,
+                             BigDecimal monthlyAmount,
+                             BigDecimal outstanding,
+                             List<DueRow> months) {
+    }
+
+    public record DueRow(String period, BigDecimal due, BigDecimal paid, BigDecimal balance,
+                         DueStatus status) {
+    }
+
+    /** One line of the payments list. */
+    public record PaymentRow(Long id,
+                             String receiptNo,
+                             LocalDate receiptDate,
+                             String familyName,
+                             String familyCode,
+                             BigDecimal amount,
+                             String mode,
+                             boolean voided) {
+    }
+
+    /** A receipt, as printed. */
+    public record ReceiptView(Long id,
+                              String receiptNo,
+                              LocalDate receiptDate,
+                              String churchName,
+                              String churchAddress,
+                              Long familyId,
+                              String familyName,
+                              String familyCode,
+                              BigDecimal amount,
+                              String mode,
+                              String referenceNo,
+                              String collector,
+                              String remarks,
+                              boolean voided,
+                              String voidReason,
+                              List<AllocationRow> settled) {
+    }
+
+    public record AllocationRow(String period, BigDecimal amount) {
+    }
+
+    // -------------------------------------------------------------------- reads
+
+    /** What this family owes, oldest first -- the screen a collector works from. */
+    @Transactional(readOnly = true)
+    public FamilyDues duesFor(Long familyId) {
+        Family family = family(familyId);
+
+        List<DueRow> months = paymentDueRepository
+                .findByFamilyIdAndDeletedFlagFalseOrderByDueYearAscDueMonthAsc(familyId).stream()
+                .filter(PaymentDue::isOutstanding)
+                .map(due -> new DueRow(due.getPeriodLabel(), due.getAmountDue(),
+                        due.getAmountPaid(), due.getBalance(), due.getStatus()))
+                .toList();
+
+        return new FamilyDues(
+                family.getId(),
+                family.getFamilyCode(),
+                family.getFamilyName(),
+                family.getAnbiyam().getAnbiyamName(),
+                headName(family.getHeadMemberId()),
+                family.getMonthlyAmount(),
+                outstandingFor(familyId),
+                months);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PaymentRow> recentPayments(int limit) {
+        return paymentRepository
+                .findByChurchIdAndDeletedFlagFalseOrderByReceiptDateDesc(currentChurchId(),
+                        org.springframework.data.domain.PageRequest.of(0, limit))
+                .getContent().stream()
+                .map(PaymentService::toRow)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public com.church.app.dto.PageView<PaymentRow> list(int page, int size) {
+        var found = paymentRepository.findByChurchIdAndDeletedFlagFalseOrderByReceiptDateDesc(
+                currentChurchId(), org.springframework.data.domain.PageRequest.of(
+                        Math.max(page, 1) - 1, size));
+        return com.church.app.dto.PageView.of(found,
+                found.getContent().stream().map(PaymentService::toRow).toList());
+    }
+
+    @Transactional(readOnly = true)
+    public ReceiptView receipt(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .filter(p -> !p.isDeletedFlag())
+                .orElseThrow(() -> new ResourceNotFoundException("Payment", paymentId));
+
+        List<AllocationRow> settled = paymentAllocationRepository
+                .findByPaymentIdOrderByPeriod(paymentId).stream()
+                .map(a -> new AllocationRow(a.getPaymentDue().getPeriodLabel(), a.getAllocatedAmount()))
+                .toList();
+
+        Church church = payment.getChurch();
+        return new ReceiptView(
+                payment.getId(),
+                payment.getReceiptNo(),
+                payment.getReceiptDate(),
+                church.getChurchName(),
+                churchAddress(church),
+                payment.getFamily().getId(),
+                payment.getFamily().getFamilyName(),
+                payment.getFamily().getFamilyCode(),
+                payment.getAmount(),
+                payment.getPaymentMode().getLabel(),
+                payment.getReferenceNo(),
+                payment.getReceivedBy() == null ? null : payment.getReceivedBy().getDisplayName(),
+                payment.getRemarks(),
+                payment.getStatus() == PaymentStatus.VOID,
+                payment.getVoidReason(),
+                settled);
+    }
+
+    /** A family a collector can pick, with what it owes. Deliberately not the full dues. */
+    public record FamilyChoice(Long familyId,
+                               String familyCode,
+                               String familyName,
+                               String headName,
+                               BigDecimal outstanding) {
+    }
+
+    /**
+     * Families a collector can choose from, one page at a time.
+     *
+     * <p>Every arrears figure comes from a single GROUP BY rather than a query per family.
+     * The first version asked the database once per household -- fine against three
+     * families, twelve hundred round trips against six hundred, on the screen used most.
+     */
+    @Transactional(readOnly = true)
+    public com.church.app.dto.PageView<FamilyChoice> familiesWithDues(String search, int page, int size) {
+        Long churchId = currentChurchId();
+        String term = search == null || search.isBlank() ? null : search.trim().toLowerCase();
+
+        var found = familyRepository.search(churchId, term, term == null ? null : term, null,
+                org.springframework.data.domain.PageRequest.of(Math.max(page, 1) - 1, size));
+
+        java.util.Map<Long, BigDecimal> arrears = paymentDueRepository.findArrearsByChurch(churchId)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        PaymentDueRepository.FamilyArrears::getFamilyId,
+                        PaymentDueRepository.FamilyArrears::getPendingAmount));
+
+        java.util.Map<Long, String> heads = namesOf(found.getContent().stream()
+                .map(Family::getHeadMemberId)
+                .filter(java.util.Objects::nonNull)
+                .toList());
+
+        return com.church.app.dto.PageView.of(found, found.getContent().stream()
+                .map(family -> new FamilyChoice(
+                        family.getId(),
+                        family.getFamilyCode(),
+                        family.getFamilyName(),
+                        heads.get(family.getHeadMemberId()),
+                        arrears.getOrDefault(family.getId(), BigDecimal.ZERO)))
+                .toList());
+    }
+
+    /** A page's worth of member ids to names, in one query. */
+    private java.util.Map<Long, String> namesOf(List<Long> memberIds) {
+        if (memberIds.isEmpty()) {
+            return java.util.Map.of();
+        }
+        return memberRepository.findAllById(memberIds).stream()
+                .filter(member -> !member.isDeletedFlag())
+                .collect(java.util.stream.Collectors.toMap(
+                        member -> member.getId(), member -> member.getDisplayName()));
+    }
+
+    private static PaymentRow toRow(Payment payment) {
+        return new PaymentRow(
+                payment.getId(),
+                payment.getReceiptNo(),
+                payment.getReceiptDate(),
+                payment.getFamily().getFamilyName(),
+                payment.getFamily().getFamilyCode(),
+                payment.getAmount(),
+                payment.getPaymentMode().getLabel(),
+                payment.getStatus() == PaymentStatus.VOID);
+    }
+
+    private String headName(Long headMemberId) {
+        if (headMemberId == null) {
+            return null;
+        }
+        return memberRepository.findById(headMemberId)
+                .map(member -> member.getDisplayName())
+                .orElse(null);
+    }
+
+    private static String churchAddress(Church church) {
+        StringBuilder address = new StringBuilder();
+        for (String part : new String[]{church.getAddressLine1(), church.getCity(), church.getPincode()}) {
+            if (part != null && !part.isBlank()) {
+                if (!address.isEmpty()) {
+                    address.append(", ");
+                }
+                address.append(part);
+            }
+        }
+        return address.toString();
     }
 
     // ------------------------------------------------------------------ collect
@@ -346,6 +559,139 @@ public class PaymentService {
         return changed;
     }
 
+    // ------------------------------------------------------- opening balances
+
+    /** A family and whatever arrears it brought in, for the cutover screen. */
+    public record OpeningBalanceRow(Long familyId,
+                                    String familyCode,
+                                    String familyName,
+                                    BigDecimal balance,
+                                    BigDecimal settled,
+                                    boolean locked,
+                                    String period) {
+    }
+
+    /**
+     * The cutover screen, a page at a time.
+     *
+     * <p>Every opening balance in the parish is fetched in one query and matched up in
+     * memory, rather than a lookup per family. This screen is used once, but it is used
+     * on the day the parish goes live -- a bad day for it to take a minute to open.
+     */
+    @Transactional(readOnly = true)
+    public com.church.app.dto.PageView<OpeningBalanceRow> openingBalances(int page, int size) {
+        Long churchId = currentChurchId();
+        var found = familyRepository.search(churchId, null, null, null,
+                org.springframework.data.domain.PageRequest.of(Math.max(page, 1) - 1, size));
+
+        java.util.Map<Long, PaymentDue> existing = paymentDueRepository
+                .findByChurchIdAndDueTypeAndDeletedFlagFalse(churchId, DueType.OPENING_BALANCE)
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        due -> due.getFamily().getId(), due -> due, (first, second) -> first));
+
+        return com.church.app.dto.PageView.of(found, found.getContent().stream()
+                .map(family -> {
+                    PaymentDue opening = existing.get(family.getId());
+                    return new OpeningBalanceRow(
+                            family.getId(),
+                            family.getFamilyCode(),
+                            family.getFamilyName(),
+                            opening == null ? BigDecimal.ZERO : opening.getAmountDue(),
+                            opening == null ? BigDecimal.ZERO : opening.getAmountPaid(),
+                            opening != null && opening.getAmountPaid().signum() > 0,
+                            openingBalanceSlot(family).toString());
+                })
+                .toList());
+    }
+
+    /**
+     * Records what a family owed before the parish started using this application.
+     *
+     * <p>Dated the month before their {@code dues_start_date}: a slot no generated month
+     * can occupy, and one that sorts first, so arrears carried forward are settled before
+     * anything current.
+     *
+     * <p>Locked once money has landed on it. Rewriting a figure a receipt was already
+     * written against would leave the parish's books disagreeing with the family's paper.
+     */
+    @Transactional
+    public void setOpeningBalance(Long familyId, BigDecimal amount) {
+        Family family = family(familyId);
+        BigDecimal value = amount == null
+                ? BigDecimal.ZERO
+                : amount.setScale(2, java.math.RoundingMode.HALF_UP);
+
+        if (value.signum() < 0) {
+            // A family in credit is not a negative debt: it is money the parish already
+            // holds, and it is recorded as a receipt instead.
+            throw new BusinessException(
+                    "An opening balance cannot be negative. Record a family in credit as a payment.");
+        }
+
+        PaymentDue existing = openingBalanceRow(familyId).orElse(null);
+
+        if (existing != null && existing.getAmountPaid().signum() > 0) {
+            throw new BusinessException(
+                    "Money has already been received against this opening balance, so it can no "
+                            + "longer be changed. Void the receipt first if it was wrong.");
+        }
+
+        if (value.signum() == 0) {
+            if (existing != null) {
+                existing.setDeletedFlag(true);
+                paymentDueRepository.save(existing);
+            }
+            return;
+        }
+
+        YearMonth slot = openingBalanceSlot(family);
+        PaymentDue due = existing == null ? new PaymentDue() : existing;
+
+        if (existing == null) {
+            due.setUuid(UUID.randomUUID().toString());
+            due.setChurch(family.getChurch());
+            due.setFamily(family);
+            due.setDueYear((short) slot.getYear());
+            due.setDueMonth((byte) slot.getMonthValue());
+            due.setDueDate(slot.atEndOfMonth());
+            due.setDueType(DueType.OPENING_BALANCE);
+            due.setAmountPaid(BigDecimal.ZERO);
+            due.setRecordStatus("ACTIVE");
+        }
+
+        due.setAmountDue(value);
+        due.setRemarks("Arrears carried forward at cutover");
+        due.setDeletedFlag(false);
+        due.recalculateStatus();
+        paymentDueRepository.save(due);
+
+        auditService.event(AuditEventType.RECORD_UPDATED)
+                .inChurch(family.getChurch().getId())
+                .on("Family", family.getId(), family.getFamilyName())
+                .permission(Resource.PAYMENT, Operation.EDIT)
+                .describe("Opening balance set to " + value)
+                .save();
+    }
+
+    private java.util.Optional<PaymentDue> openingBalanceRow(Long familyId) {
+        return paymentDueRepository
+                .findByFamilyIdAndDeletedFlagFalseOrderByDueYearAscDueMonthAsc(familyId).stream()
+                .filter(due -> due.getDueType() == DueType.OPENING_BALANCE)
+                .findFirst();
+    }
+
+    /**
+     * The month before this family starts paying -- guaranteed free, because nothing is
+     * ever generated before {@code dues_start_date}.
+     */
+    private static YearMonth openingBalanceSlot(Family family) {
+        LocalDate start = family.getDuesStartDate() == null
+                ? LocalDate.now().withDayOfMonth(1)
+                : family.getDuesStartDate();
+        return YearMonth.from(start).minusMonths(1);
+    }
+
     // ---------------------------------------------------------------- internals
 
     /**
@@ -438,6 +784,7 @@ public class PaymentService {
         due.setDueYear((short) period.getYear());
         due.setDueMonth((byte) period.getMonthValue());
         due.setDueDate(period.atDay(1));
+        due.setDueType(DueType.MONTHLY);
         due.setAmountDue(family.getMonthlyAmount());
         due.setAmountPaid(BigDecimal.ZERO);
         due.setStatus(DueStatus.PENDING);

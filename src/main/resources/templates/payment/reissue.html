@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Reissue receipt')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page page-narrow">
+    <div class="page-head">
+        <h1 th:text="#{payment.reissue}">Void and reissue</h1>
+        <p class="muted" th:text="#{payment.reissue.hint}">
+            The old receipt is cancelled and a corrected one issued. Both point at each other.
+        </p>
+    </div>
+
+    <section class="card">
+        <dl class="fields">
+            <div><dt th:text="#{payment.column.receipt}">Receipt</dt>
+                <dd th:text="${original.receiptNo}">R-2026-0003</dd></div>
+            <div><dt th:text="#{payment.family}">Family</dt>
+                <dd th:text="${original.familyName}">Family</dd></div>
+            <div><dt th:text="#{payment.wrongAmount}">Recorded</dt>
+                <dd th:text="'₹' + ${#numbers.formatDecimal(original.amount, 1, 'COMMA', 2, 'POINT')}">₹500.00</dd></div>
+        </dl>
+        <p class="muted note" th:text="#{payment.reissue.paper}">
+            If the family still has the printed slip, take it back and mark it cancelled.
+            If it has already gone, the void record is what settles any later question.
+        </p>
+    </section>
+
+    <section class="card card-form">
+        <form th:action="@{/payments/{id}/reissue(id=${original.id})}" th:object="${form}" method="post">
+            <!-- The service takes the family from the receipt being replaced, so a posted
+                 value cannot move money to another household. This is here to satisfy the
+                 form's own validation, nothing more. -->
+            <input type="hidden" th:field="*{familyId}" th:value="${original.familyId}">
+
+            <div class="field">
+                <label for="reason" th:text="#{payment.voidReason}">Reason</label>
+                <input type="text" id="reason" name="reason" required autofocus
+                       th:placeholder="#{payment.voidReason.hint}">
+            </div>
+
+            <div class="field">
+                <label for="amount" th:text="#{payment.correctAmount}">Correct amount</label>
+                <input type="number" id="amount" th:field="*{amount}" step="0.01" min="0.01"
+                       inputmode="decimal" required>
+                <p class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="paymentMode" th:text="#{payment.field.mode}">Paid by</label>
+                <select id="paymentMode" th:field="*{paymentMode}" required>
+                    <option th:each="m : ${modes}" th:value="${m}" th:text="${m.label}">Cash</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="referenceNo" th:text="#{payment.field.reference}">Reference</label>
+                <input type="text" id="referenceNo" th:field="*{referenceNo}">
+            </div>
+
+            <div class="form-actions">
+                <button class="btn" type="submit" th:text="#{payment.reissue}">Void and reissue</button>
+                <a class="btn btn-quiet" th:href="@{/payments/{id}(id=${original.id})}"
+                   th:text="#{action.cancel}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

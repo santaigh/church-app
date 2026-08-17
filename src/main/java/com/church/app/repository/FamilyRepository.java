@@ -21,6 +21,16 @@ public interface FamilyRepository extends JpaRepository<Family, Long> {
      */
     long countByAnbiyamIdAndDeletedFlagFalse(Long anbiyamId);
 
+    /** Every anbiyam's family count in one query, rather than one query per anbiyam. */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT f.anbiyam.id AS groupId, COUNT(f) AS total
+            FROM Family f
+            WHERE f.church.id = :churchId AND f.deletedFlag = false
+            GROUP BY f.anbiyam.id
+            """)
+    List<MemberRepository.GroupCount> countByAnbiyamForChurch(
+            @org.springframework.data.repository.query.Param("churchId") Long churchId);
+
     /**
      * One page of families, searched in the database.
      *
@@ -29,6 +39,7 @@ public interface FamilyRepository extends JpaRepository<Family, Long> {
      */
     @org.springframework.data.jpa.repository.Query(value = """
             SELECT f FROM Family f
+            JOIN FETCH f.anbiyam
             WHERE f.deletedFlag = false
               AND f.church.id = :churchId
               AND (:name IS NULL OR LOWER(f.familyName) LIKE CONCAT('%', :name, '%'))

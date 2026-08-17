@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Collect payment')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page page-narrow">
+    <div class="page-head">
+        <h1 th:text="${dues.familyName}">Family</h1>
+        <p class="muted">
+            <span th:text="${dues.familyCode}">FAM-002</span>
+            <span th:if="${dues.headName}" th:text="' · ' + ${dues.headName}"></span>
+            <span th:text="' · ' + ${dues.anbiyamName}"></span>
+        </p>
+    </div>
+
+    <!-- What is owed, oldest first. The collector reads this out; they do not choose
+         which month the money lands on. -->
+    <section class="card">
+        <h2 th:text="#{payment.outstanding}">Outstanding</h2>
+
+        <p class="owed-total" th:if="${dues.outstanding.signum() > 0}"
+           th:text="'₹' + ${#numbers.formatDecimal(dues.outstanding, 1, 'COMMA', 2, 'POINT')}">
+            ₹900.00
+        </p>
+        <p class="muted" th:if="${dues.outstanding.signum() == 0}" th:text="#{payment.nothingOwed}">
+            Nothing outstanding. Anything paid now runs forward.
+        </p>
+
+        <ul class="due-list" th:unless="${#lists.isEmpty(dues.months)}">
+            <li th:each="m : ${dues.months}">
+                <span th:text="${m.period}">January 2026</span>
+                <span class="due-amount"
+                      th:text="'₹' + ${#numbers.formatDecimal(m.balance, 1, 'COMMA', 2, 'POINT')}">₹300.00</span>
+            </li>
+        </ul>
+    </section>
+
+    <section class="card card-form">
+        <form th:action="@{/payments/collect}" th:object="${form}" method="post">
+            <input type="hidden" th:field="*{familyId}">
+
+            <div class="field">
+                <label for="amount" th:text="#{payment.field.amount}">Amount received</label>
+                <input type="number" id="amount" th:field="*{amount}" step="0.01" min="0.01"
+                       inputmode="decimal" required autofocus>
+                <p class="field-hint" th:text="#{payment.field.amount.hint}">
+                    Settles the oldest months first. Anything over runs forward.
+                </p>
+                <p class="field-error" th:if="${#fields.hasErrors('amount')}" th:errors="*{amount}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="paymentMode" th:text="#{payment.field.mode}">Paid by</label>
+                <select id="paymentMode" th:field="*{paymentMode}" required>
+                    <option th:each="m : ${modes}" th:value="${m}" th:text="${m.label}">Cash</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="referenceNo" th:text="#{payment.field.reference}">Reference</label>
+                <input type="text" id="referenceNo" th:field="*{referenceNo}"
+                       th:placeholder="#{payment.field.reference.hint}">
+            </div>
+
+            <div class="field">
+                <label for="receiptDate" th:text="#{payment.field.date}">Receipt date</label>
+                <input type="date" id="receiptDate" th:field="*{receiptDate}">
+                <p class="field-hint" th:text="#{payment.field.date.hint}">
+                    Leave empty for today. Only an administrator may date it earlier.
+                </p>
+            </div>
+
+            <div class="field">
+                <label for="remarks" th:text="#{payment.field.remarks}">Remarks</label>
+                <input type="text" id="remarks" th:field="*{remarks}">
+            </div>
+
+            <div class="form-actions">
+                <button class="btn btn-block" type="submit" th:text="#{payment.record}">
+                    Record payment
+                </button>
+                <a class="btn btn-quiet" th:href="@{/payments/collect}" th:text="#{action.cancel}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

@@ -35,6 +35,15 @@ public interface PaymentDueRepository extends JpaRepository<PaymentDue, Long> {
     List<PaymentDue> findByChurchIdAndStatusAndDeletedFlagFalse(Long churchId, DueStatus status);
 
     /**
+     * Every due of one kind in the parish -- the opening balances, for the cutover screen.
+     *
+     * <p>One query matched up in memory beats a lookup per family: six hundred households
+     * is six hundred round trips otherwise.
+     */
+    List<PaymentDue> findByChurchIdAndDueTypeAndDeletedFlagFalse(
+            Long churchId, com.church.app.entity.DueType dueType);
+
+    /**
      * "How much is each family behind, and by how many months."
      *
      * <p>One of the two figures asked for: pending money-wise and month-wise, per family.

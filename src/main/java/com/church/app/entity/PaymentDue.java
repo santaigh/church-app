@@ -63,6 +63,16 @@ public class PaymentDue extends AuditableEntity {
     @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
 
+    /**
+     * An ordinary month, or the arrears a family brought in at cutover.
+     *
+     * <p>Kept apart so a summary can answer "behind this year" and "brought in from the
+     * old book" separately, rather than folding two different things into one total.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "due_type", nullable = false, length = 20)
+    private DueType dueType = DueType.MONTHLY;
+
     @Column(name = "amount_due", nullable = false, precision = 12, scale = 2)
     private BigDecimal amountDue = BigDecimal.ZERO;
 

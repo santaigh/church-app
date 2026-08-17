@@ -86,9 +86,7 @@ public class HeaderModelAdvice {
         add(items, principal, Resource.PARISH_PRIEST, "menu.parishPriest", "/parish-priest", path);
         add(items, principal, Resource.MEMBER, "menu.members", "/members", path);
         add(items, principal, Resource.FAMILY, "menu.families", "/families", path);
-        // No screens yet: shown so the shape of what is coming stays visible, inert so
-        // nobody clicks into a page that does not exist.
-        add(items, principal, Resource.PAYMENT, "menu.payments", null, path);
+        add(items, principal, Resource.PAYMENT, "menu.payments", "/payments", path);
 
         return List.copyOf(items);
     }

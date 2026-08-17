@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<!--/*
+    The slip itself, and nothing else -- no navigation, no menu, no colour.
+
+    A page of its own rather than a print stylesheet laid over the receipt screen: what
+    reaches the printer is then exactly what is on this page, with nothing to hide.
+
+    Width is 58mm, set in receipt.css. To check it without a printer: Ctrl+P, choose
+    Save as PDF, and set a custom 58mm paper size -- the preview is what the printer
+    would produce, because the same stylesheet drives both.
+*/-->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Receipt ${receipt.receiptNo}|">Receipt</title>
+    <link rel="stylesheet" th:href="@{/css/receipt.css}">
+</head>
+<body class="slip">
+
+<div class="slip-body">
+    <p class="slip-church" th:text="${receipt.churchName}">St. Mary's Cathedral</p>
+    <p class="slip-address" th:text="${receipt.churchAddress}">Santhome, Chennai</p>
+
+    <p class="slip-title">
+        <span>ரசீது</span> · <span>RECEIPT</span>
+    </p>
+
+    <hr>
+
+    <p class="slip-line">
+        <span>ரசீது எண் / No</span>
+        <b th:text="${receipt.receiptNo}">R-2026-0003</b>
+    </p>
+    <p class="slip-line">
+        <span>தேதி / Date</span>
+        <b th:text="${@dates.format(receipt.receiptDate)}">01-06-2026</b>
+    </p>
+    <p class="slip-line">
+        <span>குடும்பம் / Family</span>
+        <b th:text="${receipt.familyCode}">FAM-002</b>
+    </p>
+    <p class="slip-name" th:text="${receipt.familyName}">Devasagayam Family</p>
+
+    <hr>
+
+    <p class="slip-line slip-amount">
+        <span>தொகை / Amount</span>
+        <b th:text="'₹' + ${#numbers.formatDecimal(receipt.amount, 1, 'COMMA', 2, 'POINT')}">₹500.00</b>
+    </p>
+    <p class="slip-words" th:text="${@amountInWords.of(receipt.amount)}">
+        Rupees Five Hundred Only
+    </p>
+    <p class="slip-line">
+        <span>முறை / Mode</span>
+        <b th:text="${receipt.mode}">Cash</b>
+    </p>
+    <p class="slip-line" th:if="${receipt.referenceNo}">
+        <span>குறிப்பு / Ref</span>
+        <b th:text="${receipt.referenceNo}">UPI123</b>
+    </p>
+
+    <!-- What the money was for. Without this a family cannot check their own arrears. -->
+    <div th:unless="${#lists.isEmpty(receipt.settled)}">
+        <hr>
+        <p class="slip-sub">மாதங்கள் / Months settled</p>
+        <p class="slip-line" th:each="s : ${receipt.settled}">
+            <span th:text="${s.period}">January 2026</span>
+            <b th:text="${#numbers.formatDecimal(s.amount, 1, 'COMMA', 2, 'POINT')}">300.00</b>
+        </p>
+    </div>
+
+    <hr>
+
+    <p class="slip-line">
+        <span>பெற்றவர் / By</span>
+        <b th:text="${receipt.collector} ?: '—'">Stephen</b>
+    </p>
+
+    <p class="slip-void" th:if="${receipt.voided}">** VOID / ரத்து **</p>
+    <p class="slip-remarks" th:if="${receipt.remarks}" th:text="${receipt.remarks}">Replaces R-2026-0002</p>
+
+    <p class="slip-thanks">நன்றி · Thank you</p>
+</div>
+
+<!-- Hidden when printing; this is only for the person at the screen. -->
+<div class="slip-actions">
+    <a th:href="@{/payments/{id}(id=${receipt.id})}">← Back to receipt</a>
+    <span>Use your browser's Print. No printer? Choose <b>Save as PDF</b> with a 58mm paper size.</span>
+</div>
+
+</body>
+</html>

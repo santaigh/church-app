@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * The households of the parish in scope.
@@ -61,6 +63,19 @@ public class FamilyService {
                 lower(criteria.anbiyam()),
                 PageRequest.of(Math.max(page, 1) - 1, size));
 
+        // Two lookups for the whole page rather than two per row: the counts come from
+        // one GROUP BY, and the heads from one findAllById. At six hundred families the
+        // per-row version was a hundred round trips a page.
+        Map<Long, Long> memberCounts = memberRepository
+                .countByFamilyForChurch(currentChurchId()).stream()
+                .collect(Collectors.toMap(MemberRepository.GroupCount::getGroupId,
+                        MemberRepository.GroupCount::getTotal));
+
+        Map<Long, String> heads = namesOf(found.getContent().stream()
+                .map(Family::getHeadMemberId)
+                .filter(java.util.Objects::nonNull)
+                .toList());
+
         return PageView.of(found, found.getContent().stream()
                 .map(family -> new FamilyRow(
                         family.getId(),
@@ -68,30 +83,24 @@ public class FamilyService {
                         family.getFamilyName(),
                         family.getAnbiyam().getAnbiyamName(),
                         family.getAnbiyam().getId(),
-                        headName(family.getHeadMemberId()),
-                        memberRepository.countByFamilyIdAndDeletedFlagFalse(family.getId()),
+                        heads.get(family.getHeadMemberId()),
+                        memberCounts.getOrDefault(family.getId(), 0L),
                         family.getMonthlyAmount()))
                 .toList());
     }
 
-    private static String lower(String value) {
-        return value == null || value.isBlank() ? null : value.trim().toLowerCase();
+    /** Resolves a page's worth of member ids to names in one query. */
+    private Map<Long, String> namesOf(List<Long> memberIds) {
+        if (memberIds.isEmpty()) {
+            return Map.of();
+        }
+        return memberRepository.findAllById(memberIds).stream()
+                .filter(member -> !member.isDeletedFlag())
+                .collect(Collectors.toMap(member -> member.getId(), member -> member.getDisplayName()));
     }
 
-    /**
-     * The head's name, or null where none is recorded.
-     *
-     * <p>A family can sit headless -- when the head dies or moves, the pointer is cleared
-     * until another is named -- so this is a real case, not a data fault.
-     */
-    private String headName(Long headMemberId) {
-        if (headMemberId == null) {
-            return null;
-        }
-        return memberRepository.findById(headMemberId)
-                .filter(member -> !member.isDeletedFlag())
-                .map(member -> member.getDisplayName())
-                .orElse(null);
+    private static String lower(String value) {
+        return value == null || value.isBlank() ? null : value.trim().toLowerCase();
     }
 
     private Long currentChurchId() {

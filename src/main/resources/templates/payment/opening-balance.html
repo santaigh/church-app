@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Opening balances')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Saved.</div>
+    <div class="alert alert-error" th:if="${flashError}" th:text="${flashError}">Error.</div>
+
+    <div class="page-head">
+        <h1 th:text="#{opening.title}">Opening balances</h1>
+        <p class="muted" th:text="#{opening.hint}">
+            What each family owed before this application was used. Entered once, at cutover.
+        </p>
+    </div>
+
+    <div class="alert alert-info">
+        <strong th:text="#{opening.explain.title}">How this is used</strong>
+        <span th:text="#{opening.explain}">
+            Each figure becomes a single line dated the month before that family starts paying,
+            so it is settled before anything current. A family already in credit is not a
+            negative here -- record that as a payment instead.
+        </span>
+    </div>
+
+    <form th:action="@{/payments/opening-balance}" method="post">
+        <table class="table">
+            <thead>
+            <tr>
+                <th th:text="#{family.column.name}">Family</th>
+                <th th:text="#{family.column.code}">Code</th>
+                <th th:text="#{opening.column.period}">Dated</th>
+                <th class="num" th:text="#{opening.column.balance}">Opening balance</th>
+                <th class="num" th:text="#{opening.column.settled}">Settled</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${paged.rows}">
+                <td data-label="Family" th:text="${row.familyName}">Family</td>
+                <td data-label="Code" class="muted-cell" th:text="${row.familyCode}">FAM-001</td>
+                <td data-label="Dated" class="muted-cell" th:text="${row.period}">2025-12</td>
+                <td data-label="Opening balance" class="num">
+                    <!-- Locked once money has landed on it: rewriting a figure a receipt
+                         was written against would contradict the family's own paper. -->
+                    <input class="filter-input balance-input" type="number" step="0.01" min="0"
+                           th:name="'balance-' + ${row.familyId}"
+                           th:value="${row.balance.signum() > 0} ? ${row.balance} : ''"
+                           th:disabled="${row.locked}"
+                           th:title="${row.locked} ? #{opening.locked} : ''">
+                </td>
+                <td data-label="Settled" class="num muted-cell"
+                    th:text="${row.settled.signum() > 0}
+                             ? '₹' + ${#numbers.formatDecimal(row.settled, 1, 'COMMA', 2, 'POINT')}
+                             : '—'">—</td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div th:replace="~{fragments/paging :: controls(${paged}, ${params})}"></div>
+
+        <div class="form-actions">
+            <button class="btn" type="submit" th:text="#{opening.save}">Save opening balances</button>
+            <a class="btn btn-quiet" th:href="@{/payments}" th:text="#{action.cancel}">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

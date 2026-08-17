@@ -1,0 +1,85 @@
+/*
+ * The 58mm thermal slip.
+ *
+ * Deliberately its own stylesheet rather than print rules bolted onto app.css: this page
+ * has no navigation, no theme and no colour, and keeping it separate means a change to
+ * the application's look cannot quietly reshape what comes out of the printer.
+ *
+ * Testing without a printer: Ctrl+P, Save as PDF, custom paper size 58mm wide. The
+ * preview is what the printer receives, because @page below drives both.
+ *
+ * On Tamil: the browser renders this page and sends it to the printer as graphics via the
+ * printer's own driver, so the script prints. The built-in character set that cannot do
+ * Tamil only applies when raw ESC/POS text is sent, which this never does.
+ */
+
+@page {
+    size: 58mm auto;
+    margin: 2mm;
+}
+
+body.slip {
+    margin: 0;
+    padding: 4mm 2mm;
+    background: #fff;
+    color: #000;
+    /* Noto Sans Tamil where present, then whatever the system has for the script. */
+    font-family: "Noto Sans Tamil", "Latha", Calibri, Carlito, "Segoe UI", sans-serif;
+    font-size: 9pt;
+    line-height: 1.35;
+}
+
+.slip-body { width: 54mm; margin: 0 auto; }
+
+.slip-church { font-size: 11pt; font-weight: 700; text-align: center; margin: 0; }
+.slip-address { text-align: center; margin: 1mm 0 2mm; font-size: 8pt; }
+.slip-title { text-align: center; font-weight: 700; margin: 0 0 1mm; letter-spacing: .04em; }
+.slip-sub { font-weight: 700; margin: 1mm 0; font-size: 8pt; }
+
+hr { border: 0; border-top: 1px dashed #000; margin: 2mm 0; }
+
+/* Label left, value right -- the shape every receipt has ever had. */
+.slip-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 2mm;
+    margin: .8mm 0;
+}
+
+.slip-line span { flex: 1; }
+.slip-line b { text-align: right; white-space: nowrap; }
+
+.slip-name { margin: .5mm 0 0; font-weight: 700; }
+.slip-amount { font-size: 11pt; margin: 1mm 0; }
+
+.slip-words {
+    font-size: 8pt;
+    font-style: italic;
+    margin: 1mm 0 2mm;
+    /* Long words must wrap rather than run off a 58mm roll. */
+    overflow-wrap: anywhere;
+}
+
+.slip-remarks { font-size: 8pt; margin: 2mm 0 0; overflow-wrap: anywhere; }
+.slip-void { text-align: center; font-weight: 700; margin: 2mm 0; letter-spacing: .1em; }
+.slip-thanks { text-align: center; margin: 3mm 0 0; font-size: 8pt; }
+
+/* On screen only. The printer must never receive navigation. */
+.slip-actions {
+    margin: 6mm auto 0;
+    max-width: 54mm;
+    font-size: 8pt;
+    color: #555;
+    display: flex;
+    flex-direction: column;
+    gap: 2mm;
+    border-top: 1px solid #ddd;
+    padding-top: 3mm;
+}
+
+.slip-actions a { color: #7a1f2b; }
+
+@media print {
+    .slip-actions { display: none; }
+    body.slip { padding: 0; }
+}

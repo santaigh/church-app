@@ -56,6 +56,36 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     long countByFamilyIdAndDeletedFlagFalse(Long familyId);
 
     /**
+     * Every family's member count in one query.
+     *
+     * <p>Counting per row turns a page of fifty families into fifty round trips, and the
+     * whole family list into six hundred. One GROUP BY answers for the parish.
+     */
+    @Query("""
+            SELECT m.family.id AS groupId, COUNT(m) AS total
+            FROM Member m
+            WHERE m.church.id = :churchId AND m.deletedFlag = false
+            GROUP BY m.family.id
+            """)
+    List<GroupCount> countByFamilyForChurch(@Param("churchId") Long churchId);
+
+    /** The same, per anbiyam. */
+    @Query("""
+            SELECT m.anbiyam.id AS groupId, COUNT(m) AS total
+            FROM Member m
+            WHERE m.church.id = :churchId AND m.deletedFlag = false
+            GROUP BY m.anbiyam.id
+            """)
+    List<GroupCount> countByAnbiyamForChurch(@Param("churchId") Long churchId);
+
+    /** A count against whatever it was grouped by. */
+    interface GroupCount {
+        Long getGroupId();
+
+        Long getTotal();
+    }
+
+    /**
      * One page of members, searched and filtered in the database.
      *
      * <p>The search runs over every member of the parish and the page is taken from the
@@ -70,9 +100,15 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      * <p>The ordering keeps a household together and reads it in its own order -- head,
      * spouse, children, then a parent living with them. That cannot be expressed as a
      * plain sort, because the role is stored by name and would come out alphabetically.
+     *
+     * <p>Family and anbiyam are fetched with the row. Both are lazy, and the list shows
+     * both, so without this a page of fifty members costs a hundred extra queries -- the
+     * cheapest kind of slow, and invisible until the register grows.
      */
     @Query(value = """
             SELECT m FROM Member m
+            JOIN FETCH m.family
+            JOIN FETCH m.anbiyam
             WHERE m.deletedFlag = false
               AND m.church.id = :churchId
               AND (:familyId IS NULL OR m.family.id = :familyId)
