@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Parish Priest')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="page-head">
+        <h1 th:text="${form.id == null} ? #{priest.add} : #{priest.edit}">Appoint clergy</h1>
+    </div>
+
+    <section class="card card-form">
+        <form th:action="${form.id == null} ? @{/parish-priest/new}
+                          : @{/parish-priest/{id}/edit(id=${form.id})}"
+              th:object="${form}" method="post">
+
+            <div class="field">
+                <label for="clergyRole" th:text="#{priest.field.role}">Role</label>
+                <select id="clergyRole" th:field="*{clergyRole}">
+                    <option th:each="role : ${clergyRoles}"
+                            th:value="${role}" th:text="${role.label}">Parish Priest</option>
+                </select>
+                <p class="field-hint" th:text="#{priest.field.role.hint}">
+                    A brother is a final-year seminarian, not yet ordained.
+                </p>
+            </div>
+
+            <div class="field">
+                <label for="priestName" th:text="#{priest.field.name}">Name</label>
+                <input type="text" id="priestName" th:field="*{priestName}" required autofocus>
+                <p class="field-hint" th:text="#{priest.field.name.hint}">
+                    Written as the parish writes it, with Fr. or Br.
+                </p>
+                <p class="field-error" th:if="${#fields.hasErrors('priestName')}"
+                   th:errors="*{priestName}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="priestLastPlace" th:text="#{priest.field.lastPlace}">Came from</label>
+                <input type="text" id="priestLastPlace" th:field="*{priestLastPlace}">
+                <p class="field-error" th:if="${#fields.hasErrors('priestLastPlace')}"
+                   th:errors="*{priestLastPlace}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="fromDate" th:text="#{priest.field.from}">Serving from</label>
+                <input type="date" id="fromDate" th:field="*{fromDate}" required>
+                <p class="field-error" th:if="${#fields.hasErrors('fromDate')}"
+                   th:errors="*{fromDate}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="toDate" th:text="#{priest.field.to}">Serving until</label>
+                <input type="date" id="toDate" th:field="*{toDate}">
+                <p class="field-hint" th:text="#{priest.field.to.hint}">
+                    Leave empty while still serving. Appointing a new parish priest closes
+                    the previous one automatically.
+                </p>
+                <p class="field-error" th:if="${#fields.hasErrors('toDate')}"
+                   th:errors="*{toDate}">Error</p>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn" type="submit" th:text="#{action.save}">Save</button>
+                <a class="btn btn-quiet" th:href="@{/parish-priest}" th:text="#{action.cancel}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Anbiyam')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="page-head">
+        <h1 th:text="${form.id == null} ? #{anbiyam.add} : #{anbiyam.edit}">Add anbiyam</h1>
+    </div>
+
+    <section class="card card-form">
+        <form th:action="${form.id == null} ? @{/anbiyam/new} : @{/anbiyam/{id}/edit(id=${form.id})}"
+              th:object="${form}" method="post">
+
+            <div class="field">
+                <label for="anbiyamName" th:text="#{anbiyam.field.name}">Anbiyam name</label>
+                <input type="text" id="anbiyamName" th:field="*{anbiyamName}" required autofocus>
+                <p class="field-error" th:if="${#fields.hasErrors('anbiyamName')}"
+                   th:errors="*{anbiyamName}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="areaDescription" th:text="#{anbiyam.field.area}">Area description</label>
+                <input type="text" id="areaDescription" th:field="*{areaDescription}">
+                <p class="field-error" th:if="${#fields.hasErrors('areaDescription')}"
+                   th:errors="*{areaDescription}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="headMemberId" th:text="#{anbiyam.field.animator}">Animator</label>
+                <select id="headMemberId" th:field="*{headMemberId}">
+                    <option value="" th:text="#{anbiyam.field.animator.none}">Not assigned</option>
+                    <!-- The id travels with the name: parish records refer to members by
+                         number, and two parishioners may share a name. -->
+                    <option th:each="member : ${animators}"
+                            th:value="${member.id}"
+                            th:text="${member.name} + ' (#' + ${member.id} + ')'">Name (#4)</option>
+                </select>
+                <p class="field-hint" th:text="#{anbiyam.field.animator.hint}">
+                    The member who leads this anbiyam.
+                </p>
+            </div>
+
+            <div class="field field-check">
+                <input type="checkbox" id="activeFlag" th:field="*{activeFlag}">
+                <label for="activeFlag" th:text="#{anbiyam.field.active}">Active</label>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn" type="submit" th:text="#{action.save}">Save</button>
+                <a class="btn btn-quiet" th:href="@{/anbiyam}" th:text="#{action.cancel}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

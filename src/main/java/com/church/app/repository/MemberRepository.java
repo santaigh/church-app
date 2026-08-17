@@ -1,6 +1,9 @@
 package com.church.app.repository;
 
+import com.church.app.entity.FamilyRole;
 import com.church.app.entity.Member;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -45,6 +48,86 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
      * not entered. {@code count()} would answer for the current tenant scope instead.
      */
     long countByChurchIdAndDeletedFlagFalse(Long churchId);
+
+    /** How many parishioners belong to one anbiyam -- shown on the anbiyam list. */
+    long countByAnbiyamIdAndDeletedFlagFalse(Long anbiyamId);
+
+    /** How many people are in one household -- shown on the family list. */
+    long countByFamilyIdAndDeletedFlagFalse(Long familyId);
+
+    /**
+     * One page of members, searched and filtered in the database.
+     *
+     * <p>The search runs over every member of the parish and the page is taken from the
+     * <em>results</em> -- not the other way round. Filtering a page that was already cut
+     * to fifty rows would report "not found" for someone who is plainly in the register,
+     * which is worse than having no search at all.
+     *
+     * <p>Every parameter is optional: null means "do not narrow by this". Text is matched
+     * case-insensitively on any part of the value, so "pet" finds Peter, and Tamil works
+     * unchanged because the columns are utf8mb4.
+     *
+     * <p>The ordering keeps a household together and reads it in its own order -- head,
+     * spouse, children, then a parent living with them. That cannot be expressed as a
+     * plain sort, because the role is stored by name and would come out alphabetically.
+     */
+    @Query(value = """
+            SELECT m FROM Member m
+            WHERE m.deletedFlag = false
+              AND m.church.id = :churchId
+              AND (:familyId IS NULL OR m.family.id = :familyId)
+              AND (:anbiyamId IS NULL OR m.anbiyam.id = :anbiyamId)
+              AND (:familyRole IS NULL OR m.familyRole = :familyRole)
+              AND (:name IS NULL OR LOWER(CONCAT(m.firstName, ' ', COALESCE(m.lastName, '')))
+                   LIKE CONCAT('%', :name, '%'))
+              AND (:family IS NULL OR LOWER(CONCAT(m.family.familyName, ' ', m.family.familyCode))
+                   LIKE CONCAT('%', :family, '%'))
+              AND (:anbiyam IS NULL OR LOWER(m.anbiyam.anbiyamName)
+                   LIKE CONCAT('%', :anbiyam, '%'))
+              AND (:mobile IS NULL OR COALESCE(m.mobile, '') LIKE CONCAT('%', :mobile, '%'))
+            ORDER BY m.family.familyName ASC,
+                     CASE
+                         WHEN m.familyRole = com.church.app.entity.FamilyRole.HEAD THEN 0
+                         WHEN m.familyRole = com.church.app.entity.FamilyRole.SPOUSE THEN 1
+                         WHEN m.familyRole = com.church.app.entity.FamilyRole.CHILD THEN 2
+                         WHEN m.familyRole = com.church.app.entity.FamilyRole.FATHER THEN 3
+                         WHEN m.familyRole = com.church.app.entity.FamilyRole.MOTHER THEN 4
+                         ELSE 5
+                     END ASC,
+                     m.firstName ASC
+            """,
+            countQuery = """
+            SELECT COUNT(m) FROM Member m
+            WHERE m.deletedFlag = false
+              AND m.church.id = :churchId
+              AND (:familyId IS NULL OR m.family.id = :familyId)
+              AND (:anbiyamId IS NULL OR m.anbiyam.id = :anbiyamId)
+              AND (:familyRole IS NULL OR m.familyRole = :familyRole)
+              AND (:name IS NULL OR LOWER(CONCAT(m.firstName, ' ', COALESCE(m.lastName, '')))
+                   LIKE CONCAT('%', :name, '%'))
+              AND (:family IS NULL OR LOWER(CONCAT(m.family.familyName, ' ', m.family.familyCode))
+                   LIKE CONCAT('%', :family, '%'))
+              AND (:anbiyam IS NULL OR LOWER(m.anbiyam.anbiyamName)
+                   LIKE CONCAT('%', :anbiyam, '%'))
+              AND (:mobile IS NULL OR COALESCE(m.mobile, '') LIKE CONCAT('%', :mobile, '%'))
+            """)
+    Page<Member> search(@Param("churchId") Long churchId,
+                        @Param("familyId") Long familyId,
+                        @Param("anbiyamId") Long anbiyamId,
+                        @Param("familyRole") FamilyRole familyRole,
+                        @Param("name") String name,
+                        @Param("family") String family,
+                        @Param("anbiyam") String anbiyam,
+                        @Param("mobile") String mobile,
+                        Pageable pageable);
+
+    /**
+     * The members of one anbiyam.
+     *
+     * <p>The animator is chosen from these and no one else: whoever leads an anbiyam
+     * belongs to it.
+     */
+    List<Member> findByAnbiyamIdAndDeletedFlagFalseOrderByFirstNameAsc(Long anbiyamId);
 
     List<Member> findByFamilyIdAndDeletedFlagFalse(Long familyId);
 

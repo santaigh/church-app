@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Anbiyam')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Saved.</div>
+    <div class="alert alert-error" th:if="${flashError}" th:text="${flashError}">Error.</div>
+
+    <div class="page-head list-head">
+        <div>
+            <!-- Totals on the title line, so the page answers "how many" at a glance. -->
+            <h1 th:with="members=${#aggregates.sum(rows.![members])}">
+                <span th:text="#{anbiyam.title}">Anbiyam</span>
+                <span class="count-note"
+                      th:text="'(' + #{anbiyam.totals(${#lists.size(rows)}, ${members},
+                                                      ${header.churchName})} + ')'">
+                    (3 anbiyam · 6 members in St. Mary's Cathedral)
+                </span>
+            </h1>
+        </div>
+        <!-- Hidden for an account without ADD; the controller refuses it regardless. -->
+        <a class="btn" th:if="${header.can('PERM_ANBIYAM_ADD')}" th:href="@{/anbiyam/new}"
+           th:text="#{anbiyam.add}">Add anbiyam</a>
+    </div>
+
+    <p class="empty" th:if="${#lists.isEmpty(rows)}" th:text="#{anbiyam.none}">
+        No anbiyam recorded yet.
+    </p>
+
+    <table class="table" data-filterable th:unless="${#lists.isEmpty(rows)}">
+        <thead>
+        <tr>
+            <th th:text="#{anbiyam.column.name}">Anbiyam</th>
+            <th th:text="#{anbiyam.column.area}">Area</th>
+            <th th:text="#{anbiyam.column.animator}">Animator</th>
+            <th class="num" th:text="#{anbiyam.column.families}">Families</th>
+            <th class="num" th:text="#{anbiyam.column.members}">Members</th>
+            <th th:text="#{anbiyam.column.status}">Status</th>
+            <th class="acts" data-no-filter th:text="#{table.operations}">Operations</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="row : ${rows}">
+            <!-- Clicking the anbiyam opens its members, which is what it is for. -->
+            <td data-label="Anbiyam">
+                <a th:href="@{/members(anbiyam=${row.id})}" th:text="${row.name}">Name</a>
+                <span class="id-tag" th:text="'#' + ${row.id}">#1</span>
+            </td>
+            <td data-label="Area" class="muted-cell" th:text="${row.area} ?: '—'">Area</td>
+            <td data-label="Animator">
+                <span th:if="${row.animatorId == null}" class="muted-cell">—</span>
+                <span th:if="${row.animatorId != null}">
+                    <span th:text="${row.animator}">Name</span>
+                    <span class="id-tag" th:text="'#' + ${row.animatorId}">#4</span>
+                </span>
+            </td>
+            <td data-label="Families" class="num" th:text="${row.families}">0</td>
+            <td data-label="Members" class="num" th:text="${row.members}">0</td>
+            <td data-label="Status">
+                <span th:if="${row.active}" class="pill pill-on" th:text="#{anbiyam.status.active}">Active</span>
+                <span th:unless="${row.active}" class="pill pill-off" th:text="#{anbiyam.status.inactive}">Inactive</span>
+            </td>
+            <td class="acts">
+                <a class="link" th:if="${header.can('PERM_ANBIYAM_EDIT')}"
+                   th:href="@{/anbiyam/{id}/edit(id=${row.id})}" th:text="#{anbiyam.action.edit}">Edit</a>
+                <!-- POST: a delete reachable by link can be fired by anything that fetches a URL. -->
+                <form th:if="${header.can('PERM_ANBIYAM_DELETE')}"
+                      th:action="@{/anbiyam/{id}/delete(id=${row.id})}" method="post" class="inline-form">
+                    <button class="link link-danger" type="submit"
+                            th:text="#{anbiyam.action.delete}">Delete</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+</body>
+</html>

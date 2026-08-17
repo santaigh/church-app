@@ -2,6 +2,8 @@ package com.church.app.controller;
 
 import com.church.app.security.AppUserPrincipal;
 import com.church.app.security.SelectedChurch;
+import com.church.app.security.TenantContext;
+import com.church.app.service.ChurchDirectoryService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -18,9 +20,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class DashboardController {
 
     private final SelectedChurch selectedChurch;
+    private final ChurchDirectoryService churchDirectoryService;
 
-    public DashboardController(SelectedChurch selectedChurch) {
+    public DashboardController(SelectedChurch selectedChurch,
+                               ChurchDirectoryService churchDirectoryService) {
         this.selectedChurch = selectedChurch;
+        this.churchDirectoryService = churchDirectoryService;
     }
 
     /** Root goes to the parish dashboard, which the security chain gates. */
@@ -43,20 +48,12 @@ public class DashboardController {
         if (principal.isPlatformUser() && selectedChurch.from(request).isEmpty()) {
             return "redirect:/saas/dashboard";
         }
-        addPrincipal(model, principal);
-        model.addAttribute("churchName", selectedChurch.from(request)
-                .map(SelectedChurch.Selection::churchName)
-                .orElse(principal.getChurchName()));
-        return "dashboard";
-    }
 
-    private void addPrincipal(Model model, AppUserPrincipal principal) {
-        model.addAttribute("displayName", principal.getDisplayName());
-        model.addAttribute("roleCode", principal.getRoleCode());
-        model.addAttribute("actorType", principal.getActorType());
-        model.addAttribute("churchId", principal.getChurchId());
+        Long churchId = TenantContext.currentChurchId().orElse(null);
         model.addAttribute("usingDefaultPassword", principal.isUsingDefaultPassword());
-        model.addAttribute("authorities", principal.getAuthorities().stream()
-                .map(Object::toString).sorted().toList());
+        model.addAttribute("parish", churchId == null
+                ? null
+                : churchDirectoryService.detail(churchId).orElse(null));
+        return "dashboard";
     }
 }

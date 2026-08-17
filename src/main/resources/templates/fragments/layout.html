@@ -22,6 +22,7 @@
     <title th:text="|${title} — Church App|">Church App</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
     <script th:src="@{/js/menu.js}" defer></script>
+    <script th:src="@{/js/table-filter.js}" defer></script>
 </head>
 <body>
 
@@ -81,13 +82,15 @@
         shape of what is coming stays visible.
     */-->
     <nav class="menubar" th:if="${header.insideChurch}">
-        <a th:href="@{/dashboard}" class="on">Dashboard</a>
-        <span class="soon">Anbiyam</span>
-        <span class="soon">Parish Priest</span>
-        <span class="soon">Members</span>
-        <span class="soon">Families</span>
-        <span class="soon">Payments</span>
-        <a class="menubar-switch" th:if="${header.platform}" th:href="@{/saas/dashboard}">Switch church</a>
+        <th:block th:each="item : ${header.menu}">
+            <a th:if="${item.built}" th:href="@{${item.url}}"
+               th:classappend="${item.active} ? 'on' : ''"
+               th:text="#{__${item.labelKey}__}">Module</a>
+            <span th:unless="${item.built}" class="soon"
+                  th:text="#{__${item.labelKey}__}">Module</span>
+        </th:block>
+        <a class="menubar-switch" th:if="${header.platform}" th:href="@{/saas/dashboard}"
+           th:text="#{menu.switchChurch}">Switch church</a>
     </nav>
 </header>
 

@@ -1,11 +1,17 @@
 package com.church.app.controller;
 
+import com.church.app.entity.Operation;
+import com.church.app.entity.Resource;
 import com.church.app.security.AppUserPrincipal;
 import com.church.app.security.CurrentUser;
 import com.church.app.security.SelectedChurch;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -56,7 +62,65 @@ public class HeaderModelAdvice {
                 // The two chains have separate URLs for these; the template should not
                 // have to know which one it is rendering under.
                 platform ? "/saas/logout" : "/logout",
-                platform ? "/saas/change-password" : "/change-password");
+                platform ? "/saas/change-password" : "/change-password",
+                insideChurch ? menuFor(principal) : List.of(),
+                principal.getAuthorities().stream()
+                        .map(granted -> granted.getAuthority())
+                        .collect(java.util.stream.Collectors.toUnmodifiableSet()));
+    }
+
+    /**
+     * The modules this account may open.
+     *
+     * <p>Built from the permissions loaded at sign-in, so a read-only parish account
+     * simply does not see what it cannot use. This is presentation only -- every
+     * controller carries its own {@code @PreAuthorize}, because a hidden link is not a
+     * closed door.
+     */
+    private List<MenuItem> menuFor(AppUserPrincipal principal) {
+        String path = currentPath();
+        List<MenuItem> items = new ArrayList<>();
+
+        add(items, principal, Resource.DASHBOARD, "menu.dashboard", "/dashboard", path);
+        add(items, principal, Resource.ANBIYAM, "menu.anbiyam", "/anbiyam", path);
+        add(items, principal, Resource.PARISH_PRIEST, "menu.parishPriest", "/parish-priest", path);
+        add(items, principal, Resource.MEMBER, "menu.members", "/members", path);
+        add(items, principal, Resource.FAMILY, "menu.families", "/families", path);
+        // No screens yet: shown so the shape of what is coming stays visible, inert so
+        // nobody clicks into a page that does not exist.
+        add(items, principal, Resource.PAYMENT, "menu.payments", null, path);
+
+        return List.copyOf(items);
+    }
+
+    private void add(List<MenuItem> items,
+                     AppUserPrincipal principal,
+                     Resource resource,
+                     String labelKey,
+                     String url,
+                     String currentPath) {
+        String authority = "PERM_" + resource.name() + "_" + Operation.VIEW.name();
+        boolean permitted = principal.getAuthorities().stream()
+                .anyMatch(granted -> granted.getAuthority().equals(authority));
+        if (!permitted) {
+            return;
+        }
+        boolean active = url != null && currentPath != null && currentPath.startsWith(url);
+        items.add(new MenuItem(labelKey, url, active));
+    }
+
+    private static String currentPath() {
+        return RequestContextHolder.getRequestAttributes() instanceof ServletRequestAttributes attributes
+                ? attributes.getRequest().getRequestURI()
+                : null;
+    }
+
+    /** @param url null for a module that is permitted but not yet built */
+    public record MenuItem(String labelKey, String url, boolean active) {
+
+        public boolean isBuilt() {
+            return url != null;
+        }
     }
 
     /**
@@ -70,6 +134,17 @@ public class HeaderModelAdvice {
                              boolean platform,
                              boolean insideChurch,
                              String logoutUrl,
-                             String changePasswordUrl) {
+                             String changePasswordUrl,
+                             List<MenuItem> menu,
+                             java.util.Set<String> permissions) {
+
+        /**
+         * Lets a template hide a control the account cannot use, e.g.
+         * {@code th:if="${header.can('PERM_ANBIYAM_ADD')}"}. Presentation only -- the
+         * controller's {@code @PreAuthorize} is what actually refuses the request.
+         */
+        public boolean can(String authority) {
+            return permissions.contains(authority);
+        }
     }
 }

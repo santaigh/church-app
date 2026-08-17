@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<!--/*
+    The pagination control, shared by every list.
+
+    Usage:
+        <div th:replace="~{fragments/paging :: controls(${paged}, ${params})}"></div>
+
+    `params` is the current query string without page or size, so paging keeps whatever
+    search and filters are in force. Without it, moving to page 2 would quietly drop the
+    search and show a different set of people entirely.
+*/-->
+<body>
+
+<nav class="paging" th:fragment="controls(paged, params)" th:if="${paged.totalRows > 0}">
+    <p class="paging-count">
+        <span th:text="|${paged.firstRow}–${paged.lastRow} of ${paged.totalRows}|">1–50 of 2400</span>
+    </p>
+
+    <div class="paging-pages" th:unless="${paged.singlePage}">
+        <a class="paging-step" th:if="${paged.hasPrevious()}"
+           th:href="@{'?' + ${params} + '&page=' + ${paged.page - 1} + '&size=' + ${paged.size}}"
+           rel="prev">‹ Previous</a>
+        <span class="paging-step is-off" th:unless="${paged.hasPrevious()}">‹ Previous</span>
+
+        <a th:each="n : ${paged.window()}"
+           class="paging-page"
+           th:classappend="${n == paged.page} ? ' on' : ''"
+           th:href="@{'?' + ${params} + '&page=' + ${n} + '&size=' + ${paged.size}}"
+           th:text="${n}">1</a>
+
+        <a class="paging-step" th:if="${paged.hasNext()}"
+           th:href="@{'?' + ${params} + '&page=' + ${paged.page + 1} + '&size=' + ${paged.size}}"
+           rel="next">Next ›</a>
+        <span class="paging-step is-off" th:unless="${paged.hasNext()}">Next ›</span>
+    </div>
+
+    <div class="paging-size">
+        <span>Rows</span>
+        <a th:each="s : ${T(com.church.app.dto.PageView).SIZES}"
+           th:href="@{'?' + ${params} + '&page=1&size=' + ${s}}"
+           th:classappend="${s == paged.size} ? ' on' : ''"
+           th:text="${s}">50</a>
+    </div>
+</nav>
+
+</body>
+</html>

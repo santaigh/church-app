@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Parish Priest')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Saved.</div>
+    <div class="alert alert-error" th:if="${flashError}" th:text="${flashError}">Error.</div>
+
+    <div class="page-head list-head">
+        <div>
+            <h1>
+                <span th:text="#{priest.title}">Parish Priest</span>
+                <span class="count-note"
+                      th:text="'(' + #{priest.subtitle(${#lists.size(postings)},
+                                                       ${header.churchName})} + ')'">
+                    (2 appointments in St. Mary's Cathedral)
+                </span>
+            </h1>
+        </div>
+        <a class="btn" th:if="${header.can('PERM_PARISH_PRIEST_ADD')}"
+           th:href="@{/parish-priest/new}" th:text="#{priest.add}">Appoint clergy</a>
+    </div>
+
+    <!-- A gap between postings is allowed; it is flagged, not blocked. -->
+    <div class="alert alert-warn" th:if="${noParishPriest}" th:text="#{priest.none}">
+        No parish priest is recorded for this parish.
+    </div>
+
+    <table class="table" data-filterable th:unless="${#lists.isEmpty(postings)}">
+        <thead>
+        <tr>
+            <th th:text="#{priest.column.name}">Priest</th>
+            <th th:text="#{priest.column.role}">Role</th>
+            <th th:text="#{priest.column.lastPlace}">Came from</th>
+            <th th:text="#{priest.column.from}">From</th>
+            <th th:text="#{priest.column.to}">To</th>
+            <th class="acts" data-no-filter th:text="#{table.operations}">Operations</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${postings}">
+            <td data-label="Priest">
+                <span th:text="${p.name}">Fr. Name</span>
+                <span class="pill pill-on" th:if="${p.current}" th:text="#{priest.current}">Current</span>
+            </td>
+            <td data-label="Role" th:text="${p.role}">Parish Priest</td>
+            <td data-label="Came from" class="muted-cell" th:text="${p.lastPlace} ?: '—'">—</td>
+            <td data-label="From" th:text="${@dates.format(p.from)}">date</td>
+            <!-- The empty cell is the whole design: no end date means still serving. -->
+            <td data-label="To" th:text="${@dates.format(p.to)}">—</td>
+            <td class="acts">
+                <a class="link" th:if="${header.can('PERM_PARISH_PRIEST_EDIT')}"
+                   th:href="@{/parish-priest/{id}/edit(id=${p.id})}" th:text="#{action.edit}">Edit</a>
+                <form th:if="${header.can('PERM_PARISH_PRIEST_DELETE')}"
+                      th:action="@{/parish-priest/{id}/delete(id=${p.id})}" method="post" class="inline-form">
+                    <button class="link link-danger" type="submit" th:text="#{action.delete}">Delete</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p class="empty" th:if="${#lists.isEmpty(postings)}" th:text="#{priest.empty}">
+        No appointments recorded yet.
+    </p>
+</main>
+</body>
+</html>

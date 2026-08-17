@@ -6,32 +6,99 @@
 
 <main class="page">
     <div class="alert alert-warn" th:if="${usingDefaultPassword}">
-        This account is still using the default password. Changing it will be enforced
-        in the next step.
+        This account is still using the default password.
     </div>
 
     <div class="page-head">
-        <h1>Parish dashboard</h1>
-        <p class="muted">Signed in and authorised. The real dashboard arrives with its own module.</p>
+        <h1 th:text="#{dashboard.title}">Parish dashboard</h1>
+        <p class="muted" th:if="${parish != null}" th:text="${parish.name} + ' · ' + ${parish.town}">
+            Parish · Town
+        </p>
     </div>
 
-    <section class="card">
-        <h2>Session</h2>
-        <dl class="detail">
-            <dt>Name</dt><dd th:text="${displayName}">—</dd>
-            <dt>Role</dt><dd th:text="${roleCode}">—</dd>
-            <dt>Account type</dt><dd th:text="${actorType}">—</dd>
-            <dt>Church</dt><dd th:text="${churchName} ?: 'all churches'">—</dd>
-        </dl>
-    </section>
+    <div th:if="${parish != null}">
+        <!--
+            The whole tile is the target, not just the number: four characters is a small
+            thing to hit, and these screens are used on tablets. Only the counts that have
+            a page behind them are links; Substations has no module, so it stays a tile.
+        -->
+        <div class="stat-row">
+            <a class="stat stat-link" th:if="${header.can('PERM_MEMBER_VIEW')}"
+               th:href="@{/members}">
+                <span class="stat-k" th:text="#{dashboard.stat.members}">Members</span>
+                <span class="stat-v" th:text="${parish.members}">0</span>
+            </a>
+            <div class="stat" th:unless="${header.can('PERM_MEMBER_VIEW')}">
+                <span class="stat-k" th:text="#{dashboard.stat.members}">Members</span>
+                <span class="stat-v" th:text="${parish.members}">0</span>
+            </div>
 
-    <section class="card">
-        <h2>Permissions granted by this role</h2>
-        <p class="muted">Loaded from <code>role_permission</code> at sign-in.</p>
-        <ul class="chips">
-            <li th:each="authority : ${authorities}" th:text="${authority}">PERM_X_Y</li>
-        </ul>
-    </section>
+            <a class="stat stat-link" th:if="${header.can('PERM_FAMILY_VIEW')}"
+               th:href="@{/families}">
+                <span class="stat-k" th:text="#{dashboard.stat.families}">Families</span>
+                <span class="stat-v" th:text="${parish.families}">0</span>
+            </a>
+            <div class="stat" th:unless="${header.can('PERM_FAMILY_VIEW')}">
+                <span class="stat-k" th:text="#{dashboard.stat.families}">Families</span>
+                <span class="stat-v" th:text="${parish.families}">0</span>
+            </div>
+
+            <a class="stat stat-link" th:if="${header.can('PERM_ANBIYAM_VIEW')}"
+               th:href="@{/anbiyam}">
+                <span class="stat-k" th:text="#{dashboard.stat.anbiyams}">Anbiyam</span>
+                <span class="stat-v" th:text="${parish.anbiyams}">0</span>
+            </a>
+            <div class="stat" th:unless="${header.can('PERM_ANBIYAM_VIEW')}">
+                <span class="stat-k" th:text="#{dashboard.stat.anbiyams}">Anbiyam</span>
+                <span class="stat-v" th:text="${parish.anbiyams}">0</span>
+            </div>
+
+            <div class="stat">
+                <span class="stat-k" th:text="#{dashboard.stat.substations}">Substations</span>
+                <span class="stat-v" th:text="${#lists.size(parish.substations)}">0</span>
+            </div>
+        </div>
+
+        <section class="card">
+            <h2 th:text="#{dashboard.clergy}">Clergy serving here</h2>
+            <!-- A parish should have a priest, but gaps between postings are real. -->
+            <p class="alert alert-warn" th:if="${#lists.isEmpty(parish.clergy)}"
+               th:text="#{dashboard.clergy.none}">No parish priest recorded.</p>
+            <ul class="sub-list" th:unless="${#lists.isEmpty(parish.clergy)}">
+                <li th:each="person : ${parish.clergy}">
+                    <span class="sub-name" th:text="${person.name}">Fr. Name</span>
+                    <span class="sub-where">
+                        <span th:text="${person.role}">Parish Priest</span> ·
+                        <span th:text="#{dashboard.clergy.since}">serving since</span>
+                        <span th:text="${@dates.format(person.since)}">01-06-2021</span>
+                    </span>
+                </li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2 th:text="#{dashboard.substations}">Substations</h2>
+            <p class="muted" th:if="${#lists.isEmpty(parish.substations)}"
+               th:text="#{dashboard.substations.none}">None.</p>
+            <ul class="sub-list" th:unless="${#lists.isEmpty(parish.substations)}">
+                <li th:each="sub : ${parish.substations}">
+                    <span class="sub-name" th:text="${sub.name}">Chapel</span>
+                    <span class="sub-where" th:text="${sub.address} ?: ${sub.location}">Where</span>
+                </li>
+            </ul>
+        </section>
+
+        <!-- Only the modules this role may open, and only those that exist yet. -->
+        <section class="card" th:if="${!#lists.isEmpty(header.menu)}">
+            <h2 th:text="#{dashboard.quickLinks}">Go to</h2>
+            <div class="quick-links">
+                <th:block th:each="item : ${header.menu}">
+                    <a class="quick-link" th:if="${item.built and item.url != '/dashboard'}"
+                       th:href="@{${item.url}}" th:text="#{__${item.labelKey}__}">Module</a>
+                </th:block>
+            </div>
+        </section>
+    </div>
 </main>
 </body>
 </html>

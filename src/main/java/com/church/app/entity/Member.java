@@ -2,6 +2,8 @@ package com.church.app.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -99,9 +101,18 @@ public class Member extends AuditableEntity {
     @Column(name = "email", length = 150)
     private String email;
 
-    /** Column is spelled "catagory" in the schema; kept as-is to avoid a rename migration. */
-    @Column(name = "catagory", length = 100)
-    private String category;
+    /**
+     * Where this member sits in their family.
+     *
+     * <p>Was {@code catagory} -- misspelled, and holding parish duties and occupations
+     * rather than family positions. V21 renamed it and V22 corrected the values; what a
+     * member does for a living lives on {@code member_ext.occupation}.
+     *
+     * <p>Nullable: a member's position may simply not be recorded yet.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "family_role", length = 20)
+    private FamilyRole familyRole;
 
     @Column(name = "remarks", length = 500)
     private String remarks;

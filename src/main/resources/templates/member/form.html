@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Member')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="page-head">
+        <h1 th:text="${form.id == null} ? #{member.add} : #{member.edit}">Add member</h1>
+    </div>
+
+    <section class="card card-form card-wide">
+        <form th:action="${form.id == null} ? @{/members/new} : @{/members/{id}/edit(id=${form.id})}"
+              th:object="${form}" method="post">
+
+            <div class="form-grid">
+
+            <div class="field">
+                <label for="firstName" th:text="#{member.field.firstName}">First name</label>
+                <input type="text" id="firstName" th:field="*{firstName}" required autofocus>
+                <p class="field-error" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="middleName" th:text="#{member.field.middleName}">Middle name</label>
+                <input type="text" id="middleName" th:field="*{middleName}">
+            </div>
+
+            <div class="field">
+                <label for="lastName" th:text="#{member.field.lastName}">Last name</label>
+                <input type="text" id="lastName" th:field="*{lastName}">
+            </div>
+
+            <div class="field">
+                <label for="gender" th:text="#{member.field.gender}">Gender</label>
+                <select id="gender" th:field="*{gender}" required>
+                    <option value="">—</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="dateOfBirth" th:text="#{member.field.dob}">Date of birth</label>
+                <input type="date" id="dateOfBirth" th:field="*{dateOfBirth}">
+            </div>
+
+            <div class="field">
+                <label for="familyId" th:text="#{member.field.family}">Family</label>
+                <select id="familyId" th:field="*{familyId}" required>
+                    <option value="">—</option>
+                    <option th:each="family : ${families}"
+                            th:value="${family.id}" th:text="${family.label}">Family</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('familyId')}" th:errors="*{familyId}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="anbiyamId" th:text="#{member.field.anbiyam}">Anbiyam</label>
+                <select id="anbiyamId" th:field="*{anbiyamId}" required>
+                    <option value="">—</option>
+                    <option th:each="anbiyam : ${anbiyams}"
+                            th:value="${anbiyam.id}" th:text="${anbiyam.label}">Anbiyam</option>
+                </select>
+                <p class="field-error" th:if="${#fields.hasErrors('anbiyamId')}" th:errors="*{anbiyamId}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="familyRole" th:text="#{member.field.familyRole}">Family role</label>
+                <select id="familyRole" th:field="*{familyRole}">
+                    <option value="" th:text="#{member.field.familyRole.none}">Not recorded</option>
+                    <option th:each="role : ${familyRoles}"
+                            th:value="${role}" th:text="${role.label}">Head</option>
+                </select>
+                <p class="field-hint" th:text="#{member.headWarning}">
+                    Naming a head moves the role from whoever held it.
+                </p>
+            </div>
+
+            <div class="field">
+                <label for="mobile" th:text="#{member.field.mobile}">Mobile</label>
+                <input type="text" id="mobile" th:field="*{mobile}">
+                <p class="field-error" th:if="${#fields.hasErrors('mobile')}" th:errors="*{mobile}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="alternateMobile" th:text="#{member.field.altMobile}">Alternate mobile</label>
+                <input type="text" id="alternateMobile" th:field="*{alternateMobile}">
+            </div>
+
+            <div class="field">
+                <label for="email" th:text="#{member.field.email}">Email</label>
+                <input type="email" id="email" th:field="*{email}">
+                <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="roleId" th:text="#{member.field.role}">Account role</label>
+                <select id="roleId" th:field="*{roleId}" required>
+                    <option value="">—</option>
+                    <option th:each="role : ${roles}"
+                            th:value="${role.id}" th:text="${role.label}">Church User</option>
+                </select>
+                <p class="field-hint" th:text="#{member.field.role.hint}">
+                    What this person may do once signed in.
+                </p>
+                <p class="field-error" th:if="${#fields.hasErrors('roleId')}" th:errors="*{roleId}">Error</p>
+            </div>
+
+            <div class="field">
+                <label for="remarks" th:text="#{member.field.remarks}">Remarks</label>
+                <input type="text" id="remarks" th:field="*{remarks}">
+            </div>
+
+            </div>
+
+            <!--/*
+                Additional details, shut by default. Registering someone usually means a
+                name, a family and a phone number -- baptism dates arrive later. Left
+                closed and empty, nothing is written and no member_ext row is created.
+            */-->
+            <details class="collapse">
+                <summary th:text="#{member.ext.title}">Additional details</summary>
+
+                <div class="collapse-body">
+                    <h3 th:text="#{member.ext.personal}">Personal</h3>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="bloodGroup" th:text="#{member.ext.bloodGroup}">Blood group</label>
+                            <input type="text" id="bloodGroup" th:field="*{extra.bloodGroup}">
+                        </div>
+                        <div class="field">
+                            <label for="maritalStatus" th:text="#{member.ext.maritalStatus}">Marital status</label>
+                            <input type="text" id="maritalStatus" th:field="*{extra.maritalStatus}">
+                        </div>
+                        <div class="field">
+                            <label for="occupation" th:text="#{member.ext.occupation}">Occupation</label>
+                            <input type="text" id="occupation" th:field="*{extra.occupation}">
+                        </div>
+                        <div class="field">
+                            <label for="education" th:text="#{member.ext.education}">Education</label>
+                            <input type="text" id="education" th:field="*{extra.education}">
+                        </div>
+                        <div class="field">
+                            <label for="nativePlace" th:text="#{member.ext.nativePlace}">Native place</label>
+                            <input type="text" id="nativePlace" th:field="*{extra.nativePlace}">
+                        </div>
+                    </div>
+
+                    <h3 th:text="#{member.ext.address}">Address</h3>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="addressLine1">Address line 1</label>
+                            <input type="text" id="addressLine1" th:field="*{extra.addressLine1}">
+                        </div>
+                        <div class="field">
+                            <label for="addressLine2">Address line 2</label>
+                            <input type="text" id="addressLine2" th:field="*{extra.addressLine2}">
+                        </div>
+                        <div class="field">
+                            <label for="city">City</label>
+                            <input type="text" id="city" th:field="*{extra.city}">
+                        </div>
+                        <div class="field">
+                            <label for="district">District</label>
+                            <input type="text" id="district" th:field="*{extra.district}">
+                        </div>
+                        <div class="field">
+                            <label for="state">State</label>
+                            <input type="text" id="state" th:field="*{extra.state}">
+                        </div>
+                        <div class="field">
+                            <label for="pincode">Pincode</label>
+                            <input type="text" id="pincode" th:field="*{extra.pincode}">
+                        </div>
+                    </div>
+
+                    <h3 th:text="#{member.ext.sacraments}">Sacraments</h3>
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="baptismDate" th:text="#{member.ext.baptism}">Baptism</label>
+                            <input type="date" id="baptismDate" th:field="*{extra.baptismDate}">
+                            <input type="text" th:field="*{extra.baptismPlace}" placeholder="Place">
+                        </div>
+                        <div class="field">
+                            <label for="holyCommunionDate" th:text="#{member.ext.communion}">Holy communion</label>
+                            <input type="date" id="holyCommunionDate" th:field="*{extra.holyCommunionDate}">
+                            <input type="text" th:field="*{extra.holyCommunionPlace}" placeholder="Place">
+                        </div>
+                        <div class="field">
+                            <label for="confirmationDate" th:text="#{member.ext.confirmation}">Confirmation</label>
+                            <input type="date" id="confirmationDate" th:field="*{extra.confirmationDate}">
+                            <input type="text" th:field="*{extra.confirmationPlace}" placeholder="Place">
+                        </div>
+                        <div class="field">
+                            <label for="marriageDate" th:text="#{member.ext.marriage}">Marriage</label>
+                            <input type="date" id="marriageDate" th:field="*{extra.marriageDate}">
+                            <input type="text" th:field="*{extra.marriagePlace}" placeholder="Place">
+                        </div>
+                    </div>
+                </div>
+            </details>
+
+            <div class="form-actions">
+                <button class="btn" type="submit" th:text="#{action.save}">Save</button>
+                <a class="btn btn-quiet" th:href="@{/members}" th:text="#{action.cancel}">Cancel</a>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

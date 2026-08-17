@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Member')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Saved.</div>
+
+    <!-- Identity in a line or two, so the page opens with who this is. -->
+    <div class="page-head list-head">
+        <div>
+            <h1>
+                <span th:text="${member.name}">Name</span>
+                <span class="id-tag" th:text="'#' + ${member.id}">#1</span>
+            </h1>
+            <p class="muted">
+                <span th:text="${member.familyRole} ?: #{member.field.familyRole.none}">Head</span>
+                · <span th:text="${member.familyName}">Family</span>
+                <span th:text="'(' + ${member.familyCode} + ')'">(FAM-001)</span>
+                · <span th:text="${member.anbiyamName}">Anbiyam</span>
+            </p>
+            <p class="muted">
+                <span th:text="${member.gender}">MALE</span>
+                · <span th:text="#{member.field.age}">Age</span>
+                <span th:text="${@dates.age(member.dateOfBirth)}">42</span>
+                · <span th:text="${member.mobile} ?: '—'">—</span>
+            </p>
+        </div>
+        <div class="form-actions">
+            <a class="btn" th:if="${header.can('PERM_MEMBER_EDIT')}"
+               th:href="@{/members/{id}/edit(id=${member.id})}" th:text="#{action.edit}">Edit</a>
+            <a class="btn btn-quiet" th:href="@{/members}" th:text="#{action.back}">Back</a>
+        </div>
+    </div>
+
+    <section class="card">
+        <h2 th:text="#{member.view}">Member details</h2>
+        <dl class="fields">
+            <div>
+                <dt th:text="#{member.field.dob}">Date of birth</dt>
+                <dd th:text="${@dates.format(member.dateOfBirth)}">—</dd>
+            </div>
+            <div>
+                <dt th:text="#{member.field.age}">Age</dt>
+                <dd th:text="${@dates.age(member.dateOfBirth)}">—</dd>
+            </div>
+            <div>
+                <dt th:text="#{member.field.mobile}">Mobile</dt>
+                <dd th:text="${member.mobile} ?: '—'">—</dd>
+            </div>
+            <div>
+                <dt th:text="#{member.field.altMobile}">Alternate mobile</dt>
+                <dd th:text="${member.alternateMobile} ?: '—'">—</dd>
+            </div>
+            <div>
+                <dt th:text="#{member.field.email}">Email</dt>
+                <dd th:text="${member.email} ?: '—'">—</dd>
+            </div>
+            <div>
+                <dt th:text="#{member.field.gender}">Gender</dt>
+                <dd th:text="${member.gender}">—</dd>
+            </div>
+            <div>
+                <dt>Role</dt>
+                <dd th:text="${member.roleCode}">AppUser</dd>
+            </div>
+            <div>
+                <dt th:text="#{member.field.remarks}">Remarks</dt>
+                <dd th:text="${member.remarks} ?: '—'">—</dd>
+            </div>
+        </dl>
+    </section>
+
+    <!-- The rest of the record, inline rather than a page away. -->
+    <section class="card" id="additional">
+        <div class="list-head">
+            <h2 th:text="#{member.ext.title}">Additional details</h2>
+            <a class="link" th:if="${header.can('PERM_MEMBER_EDIT')}"
+               th:href="@{/members/{id}/details/edit(id=${member.id})}"
+               th:text="#{member.ext.edit}">Edit additional details</a>
+        </div>
+
+        <p class="muted" th:if="${ext == null}" th:text="#{member.ext.none}">
+            No additional details recorded for this member.
+        </p>
+
+        <div th:if="${ext != null}">
+            <h3 th:text="#{member.ext.personal}">Personal</h3>
+            <dl class="fields">
+                <div>
+                    <dt th:text="#{member.ext.bloodGroup}">Blood group</dt>
+                    <dd th:text="${ext.bloodGroup} ?: '—'">—</dd>
+                </div>
+                <div>
+                    <dt th:text="#{member.ext.maritalStatus}">Marital status</dt>
+                    <dd th:text="${ext.maritalStatus} ?: '—'">—</dd>
+                </div>
+                <div>
+                    <dt th:text="#{member.ext.occupation}">Occupation</dt>
+                    <dd th:text="${ext.occupation} ?: '—'">—</dd>
+                </div>
+                <div>
+                    <dt th:text="#{member.ext.education}">Education</dt>
+                    <dd th:text="${ext.education} ?: '—'">—</dd>
+                </div>
+                <div>
+                    <dt th:text="#{member.ext.nativePlace}">Native place</dt>
+                    <dd th:text="${ext.nativePlace} ?: '—'">—</dd>
+                </div>
+            </dl>
+
+            <h3 th:text="#{member.ext.address}">Address</h3>
+            <dl class="fields">
+                <div>
+                    <dt th:text="#{member.ext.address}">Address</dt>
+                    <dd>
+                        <span th:text="${ext.addressLine1} ?: '—'">—</span>
+                        <span th:if="${ext.addressLine2}" th:text="', ' + ${ext.addressLine2}"></span>
+                    </dd>
+                </div>
+                <div><dt>City</dt><dd th:text="${ext.city} ?: '—'">—</dd></div>
+                <div><dt>District</dt><dd th:text="${ext.district} ?: '—'">—</dd></div>
+                <div><dt>State</dt><dd th:text="${ext.state} ?: '—'">—</dd></div>
+                <div><dt>Pincode</dt><dd th:text="${ext.pincode} ?: '—'">—</dd></div>
+            </dl>
+
+            <h3 th:text="#{member.ext.sacraments}">Sacraments</h3>
+            <table class="table">
+                <thead>
+                <tr><th>Sacrament</th><th>Date</th><th>Place</th></tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td data-label="Sacrament" th:text="#{member.ext.baptism}">Baptism</td>
+                    <td data-label="Date" th:text="${@dates.format(ext.baptismDate)}">—</td>
+                    <td data-label="Place" th:text="${ext.baptismPlace} ?: '—'">—</td>
+                </tr>
+                <tr>
+                    <td data-label="Sacrament" th:text="#{member.ext.communion}">Holy communion</td>
+                    <td data-label="Date" th:text="${@dates.format(ext.holyCommunionDate)}">—</td>
+                    <td data-label="Place" th:text="${ext.holyCommunionPlace} ?: '—'">—</td>
+                </tr>
+                <tr>
+                    <td data-label="Sacrament" th:text="#{member.ext.confirmation}">Confirmation</td>
+                    <td data-label="Date" th:text="${@dates.format(ext.confirmationDate)}">—</td>
+                    <td data-label="Place" th:text="${ext.confirmationPlace} ?: '—'">—</td>
+                </tr>
+                <tr>
+                    <td data-label="Sacrament" th:text="#{member.ext.marriage}">Marriage</td>
+                    <td data-label="Date" th:text="${@dates.format(ext.marriageDate)}">—</td>
+                    <td data-label="Place" th:text="${ext.marriagePlace} ?: '—'">—</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

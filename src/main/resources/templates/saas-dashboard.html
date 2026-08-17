@@ -66,7 +66,7 @@
                             <span class="sub-name" th:text="${person.name}">Fr. Name</span>
                             <span class="sub-where">
                                 <span th:text="${person.role}">Parish Priest</span> ·
-                                serving since <span th:text="${person.since}">date</span>
+                                serving since <span th:text="${@dates.format(person.since)}">01-06-2021</span>
                             </span>
                         </li>
                     </ul>
@@ -78,12 +78,12 @@
 
                 <section class="card">
                     <h3>Parish details</h3>
-                    <dl class="detail">
-                        <dt>Diocese</dt><dd th:text="${detail.diocese} ?: '—'">—</dd>
-                        <dt>Address</dt><dd th:text="${detail.address} ?: '—'">—</dd>
-                        <dt>Phone</dt><dd th:text="${detail.phone} ?: '—'">—</dd>
-                        <dt>Email</dt><dd th:text="${detail.email} ?: '—'">—</dd>
-                        <dt>Established</dt><dd th:text="${detail.establishedDate} ?: '—'">—</dd>
+                    <dl class="fields">
+                        <div><dt>Diocese</dt><dd th:text="${detail.diocese} ?: '—'">—</dd></div>
+                        <div><dt>Address</dt><dd th:text="${detail.address} ?: '—'">—</dd></div>
+                        <div><dt>Phone</dt><dd th:text="${detail.phone} ?: '—'">—</dd></div>
+                        <div><dt>Email</dt><dd th:text="${detail.email} ?: '—'">—</dd></div>
+                        <div><dt>Established</dt><dd th:text="${@dates.format(detail.establishedDate)}">—</dd></div>
                     </dl>
                 </section>
 

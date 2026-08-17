@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Families')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="page-head list-head">
+        <div>
+            <h1>
+                <span th:text="#{family.title}">Families</span>
+                <!-- The count follows the search, not the table. -->
+                <span class="count-note"
+                      th:text="'(' + #{family.totals(${paged.totalRows}, ${header.churchName})} + ')'">
+                    (3 families in St. Mary's Cathedral)
+                </span>
+            </h1>
+        </div>
+    </div>
+
+    <!-- Outside the table, so the search controls never nest inside another form. -->
+    <form id="family-search" method="get" th:action="@{/families}">
+        <input type="hidden" name="size" th:value="${paged.size}">
+    </form>
+
+    <table class="table">
+        <thead>
+        <tr>
+            <th th:text="#{family.column.name}">Family</th>
+            <th th:text="#{family.column.code}">Code</th>
+            <th th:text="#{family.column.anbiyam}">Anbiyam</th>
+            <th th:text="#{family.column.head}">Head of family</th>
+            <th class="num" th:text="#{family.column.members}">Members</th>
+            <th class="acts">&nbsp;</th>
+        </tr>
+        <tr class="filter-row">
+            <th><input class="filter-input" form="family-search" type="search" name="name"
+                       th:value="${search.name}" th:placeholder="#{family.column.name}"></th>
+            <th><input class="filter-input" form="family-search" type="search" name="code"
+                       th:value="${search.code}" th:placeholder="#{family.column.code}"></th>
+            <th><input class="filter-input" form="family-search" type="search" name="anbiyamText"
+                       th:value="${search.anbiyam}" th:placeholder="#{family.column.anbiyam}"></th>
+            <th></th>
+            <th></th>
+            <th class="acts">
+                <button class="btn btn-small" form="family-search" type="submit"
+                        th:text="#{table.search}">Search</button>
+                <a class="link" th:if="${search.active}" th:href="@{/families}"
+                   th:text="#{table.clear}">Clear</a>
+            </th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:if="${#lists.isEmpty(paged.rows)}">
+            <td colspan="6" class="empty-cell" th:text="#{table.noMatches}">
+                Nothing matches that search.
+            </td>
+        </tr>
+        <tr th:each="row : ${paged.rows}">
+            <!-- The name opens that family's members: the question a family list is asked. -->
+            <td data-label="Family">
+                <a th:href="@{/members(family=${row.id})}" th:text="${row.name}">Family</a>
+                <span class="id-tag" th:text="'#' + ${row.id}">#1</span>
+            </td>
+            <td data-label="Code" class="muted-cell" th:text="${row.code}">FAM-001</td>
+            <td data-label="Anbiyam">
+                <a th:href="@{/members(anbiyam=${row.anbiyamId})}" th:text="${row.anbiyamName}">Anbiyam</a>
+            </td>
+            <!-- A family may sit headless between one head leaving and another being named. -->
+            <td data-label="Head of family" th:text="${row.headName} ?: '—'">—</td>
+            <td data-label="Members" class="num" th:text="${row.members}">0</td>
+            <td class="acts">
+                <a class="link" th:href="@{/members(family=${row.id})}"
+                   th:text="#{family.viewMembers}">View members</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div th:replace="~{fragments/paging :: controls(${paged}, ${params})}"></div>
+</main>
+</body>
+</html>

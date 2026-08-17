@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -139,6 +140,25 @@ public class GlobalExceptionHandler {
         return respond(request, HttpStatus.CONFLICT, "DATA_INTEGRITY_VIOLATION",
                 "This change conflicts with existing data. It may already exist, "
                 + "or another record may depend on it.", null);
+    }
+
+    // ---------------------------------------------------------------- authorisation
+
+    /**
+     * A {@code @PreAuthorize} refusal.
+     *
+     * <p>Needs its own handler, and the reason is worth recording. Method security throws
+     * this inside the controller invocation, where the {@code @ControllerAdvice} sees it
+     * first -- Spring Security's {@code ExceptionTranslationFilter} never gets the chance.
+     * Without this method the catch-all below would answer, and every denied permission
+     * would render as "something went wrong on our side" with a 500. That is misleading
+     * to the user and, in a log, indistinguishable from a real fault.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public Object handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        log.warn("Access denied at {} {}: {}", request.getMethod(), request.getRequestURI(), ex.getMessage());
+        return respond(request, HttpStatus.FORBIDDEN, "ACCESS_DENIED",
+                "You do not have permission to do that.", null);
     }
 
     // ---------------------------------------------------------------- catch-all

@@ -20,7 +20,14 @@ body {
     min-height: 100vh;
     background: var(--bg);
     color: var(--text);
-    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    /*
+     * Calibri first, then fallbacks that keep the same feel where it is absent: Carlito
+     * is metric-compatible with Calibri on Linux, Segoe UI is the Windows neighbour, and
+     * the system stack covers phones. No webfont file is loaded -- the content security
+     * policy blocks external font hosts, and shipping one would cost every page a
+     * download for a typeface most of your users already have.
+     */
+    font-family: Calibri, Carlito, "Segoe UI", system-ui, -apple-system, sans-serif;
     line-height: 1.5;
 }
 
@@ -157,7 +164,8 @@ body.theme-platform .btn:hover { background: #163a5a; }
     margin-bottom: .3rem;
 }
 
-.field input {
+.field input,
+.field select {
     width: 100%;
     padding: .55rem .7rem;
     border: 1px solid var(--border);
@@ -168,7 +176,11 @@ body.theme-platform .btn:hover { background: #163a5a; }
     color: var(--text);
 }
 
-.field input:focus {
+/* The checkbox is the exception: it should not stretch across the field. */
+.field-check input { width: auto; }
+
+.field input:focus,
+.field select:focus {
     outline: 2px solid var(--accent);
     outline-offset: 1px;
     border-color: var(--accent);
@@ -492,6 +504,19 @@ body.theme-platform .btn:hover { background: #163a5a; }
     padding: .75rem .9rem;
 }
 
+/* A tile that leads somewhere should look like it does, and should still look like it
+   with a keyboard rather than a mouse. */
+.stat-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color .12s, box-shadow .12s;
+}
+
+.stat-link:hover { border-color: var(--accent); box-shadow: 0 1px 6px rgba(16, 24, 40, .08); }
+.stat-link:hover .stat-v { color: var(--accent); }
+.stat-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 .stat-k { display: block; font-size: .65rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 .stat-v { display: block; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.25; }
 
@@ -513,6 +538,232 @@ body.theme-platform .btn:hover { background: #163a5a; }
 
 .empty-mark { font-size: 2rem; margin: 0 0 .5rem; opacity: .5; }
 
+/* ------------------------------------------------------------------ tables */
+
+.list-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+/* The heading band carries the theme colour: maroon in a parish, blue for platform
+   staff, so which context you are working in is legible from the table alone. */
+.table thead th { text-align: center; }
+
+.table th {
+    text-align: left;
+    font-size: .68rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: #fff;
+    font-weight: 600;
+    padding: .65rem 1rem;
+    background: var(--accent);
+    border-bottom: 1px solid var(--accent);
+}
+
+/* Search boxes, one per column, added by table-filter.js. */
+.table .filter-row th {
+    background: var(--accent-soft);
+    padding: .4rem .5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.filter-input {
+    width: 100%;
+    min-width: 5rem;
+    padding: .3rem .5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font: inherit;
+    font-size: .8rem;
+    background: var(--card);
+    color: var(--text);
+}
+
+.filter-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.filter-count { font-size: .8rem; color: var(--muted); margin: .6rem 0 0; }
+
+.btn-small { padding: .28rem .6rem; font-size: .78rem; }
+.empty-cell { text-align: center; color: var(--muted); padding: 1.5rem !important; }
+
+/* ------------------------------------------------------------------ paging */
+
+.paging {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: .9rem;
+    font-size: .85rem;
+}
+
+.paging-count { margin: 0; color: var(--muted); font-variant-numeric: tabular-nums; }
+.paging-pages { display: flex; align-items: center; gap: .25rem; margin-left: auto; }
+
+.paging-page,
+.paging-step {
+    padding: .25rem .55rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    text-decoration: none;
+    color: var(--text);
+    background: var(--card);
+    font-variant-numeric: tabular-nums;
+}
+
+.paging-page:hover, .paging-step:hover { border-color: var(--accent); color: var(--accent); }
+.paging-page.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.paging-step.is-off { color: #b9bec6; background: transparent; border-color: transparent; }
+
+.paging-size { display: flex; align-items: center; gap: .3rem; color: var(--muted); }
+.paging-size a { text-decoration: none; color: var(--muted); padding: .1rem .35rem; border-radius: 4px; }
+.paging-size a.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+
+/* What the list is currently narrowed to, with a way back out. */
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .25rem .5rem .25rem .8rem;
+    font-size: .85rem;
+    margin-bottom: 1rem;
+}
+
+.filter-chip a { color: var(--muted); text-decoration: none; font-weight: 600; }
+.filter-chip a:hover { color: var(--danger); }
+
+/* Tight rows: a parish of 600 families runs to a few thousand members, and every
+   spare pixel of row height is a row that falls off the screen. */
+.table td { padding: .38rem .75rem; border-bottom: 1px solid #eef0f2; font-size: .85rem; line-height: 1.35; }
+.table th { padding: .5rem .75rem; }
+.table tr:last-child td { border-bottom: 0; }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.table .acts { text-align: right; white-space: nowrap; }
+.table .muted-cell { color: var(--muted); }
+
+.inline-form { display: inline; margin: 0; }
+
+.link { background: none; border: 0; padding: 0; font: inherit; font-size: .82rem; color: var(--accent); text-decoration: none; cursor: pointer; margin-left: .7rem; }
+.link:hover { text-decoration: underline; }
+.link-danger { color: var(--danger); }
+
+/* The member number, alongside the name. Quiet: it identifies, it does not lead. */
+.id-tag {
+    font-size: .72rem;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .05rem .4rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.pill { display: inline-block; font-size: .7rem; font-weight: 600; padding: .12rem .55rem; border-radius: 999px; }
+.pill-on { background: #e7f4ec; color: #276b46; }
+.pill-off { background: #f0f1f3; color: var(--muted); }
+
+.quick-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+.quick-link {
+    padding: .45rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: .875rem;
+}
+
+.quick-link:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ------------------------------------------------------------------- forms */
+
+.card-form { max-width: 34rem; }
+
+/* A form of twenty inputs down one column is several screens long. Flowing them into
+   columns keeps the whole thing in view, and collapses back to one on a phone. */
+.card-wide { max-width: 54rem; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0 1.5rem; }
+.form-grid .field { min-width: 0; }
+
+/* A section folded away until it is wanted -- <details> again, so no script and
+   nothing for the content security policy to object to. */
+.collapse {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin: .5rem 0 0;
+    background: var(--bg);
+}
+
+.collapse > summary {
+    padding: .65rem .9rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: .9rem;
+    list-style: none;
+}
+
+.collapse > summary::before { content: "▸ "; color: var(--muted); }
+.collapse[open] > summary::before { content: "▾ "; }
+.collapse > summary::-webkit-details-marker { display: none; }
+.collapse > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.collapse-body { padding: 0 .9rem .5rem; }
+.collapse-body h3:first-child { margin-top: .25rem; }
+.field-check { display: flex; align-items: center; gap: .5rem; }
+.field-check label { margin: 0; }
+.field-error { color: var(--danger); font-size: .8rem; margin: .3rem 0 0; }
+.field-hint { color: var(--muted); font-size: .78rem; margin: .3rem 0 0; }
+.form-actions { display: flex; align-items: center; gap: .75rem; margin-top: 1.25rem; }
+
+.btn-quiet {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    padding: .45rem .9rem;
+    border-radius: 8px;
+    font-size: .875rem;
+}
+
+.btn-quiet:hover { background: var(--bg); }
+
+/*
+ * Below 640px a table becomes stacked cards -- everywhere, not only on payments, so
+ * every module copies one rule rather than two that drift apart. The header cells are
+ * hidden and each cell carries its own label from data-label.
+ */
+@media (max-width: 40rem) {
+    /* Cards have no columns to search down, so the filter row goes with the headings. */
+    .table thead { display: none; }
+    .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+
+    .table tr {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: .75rem;
+        background: var(--card);
+        padding: .35rem .25rem;
+    }
+
+    .table { border: 0; background: none; }
+    .table td { border: 0; display: flex; justify-content: space-between; gap: 1rem; padding: .4rem .85rem; }
+    .table td::before { content: attr(data-label); color: var(--muted); font-size: .75rem; font-weight: 600; }
+    .table td.num { text-align: right; }
+    .table td.acts { justify-content: flex-end; padding-top: .6rem; }
+    .table td.acts::before { content: none; }
+    .link:first-child { margin-left: 0; }
+}
+
 /* Payment screens are mobile-first; everything else must simply stay usable. */
 @media (max-width: 60rem) {
     .split { grid-template-columns: 1fr; }
@@ -532,22 +783,53 @@ body.theme-platform .btn:hover { background: #163a5a; }
 .page { max-width: 60rem; margin: 0 auto; padding: 1.5rem; }
 .page-head { margin-bottom: 1.25rem; }
 .page-head .muted { margin: .15rem 0 0; }
+
+/* The counts sit on the title line, in brackets, rather than as a second line. */
+.count-note {
+    font-size: .9rem;
+    font-weight: 400;
+    color: var(--muted);
+    white-space: normal;
+}
 .page h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
 .page h2 { font-size: 1.05rem; margin: 0 0 .75rem; }
 .page .card { margin-bottom: 1.25rem; padding: 1.25rem 1.5rem; max-width: none; }
 
 .muted { color: var(--muted); font-size: .9rem; }
 
-.detail {
+/*
+ * Read-only fields laid out across the page rather than one per line.
+ *
+ * A column of twenty labels runs the member page down several screens; the same fields
+ * in a flowing grid fit in a fraction of it. Each label sits above its own value, so a
+ * blank field cannot pull the one beside it out of line -- which is exactly what the
+ * previous two-column layout did.
+ *
+ * The dt/dd pairs are wrapped in a div, which HTML5 permits inside a dl, so each pair is
+ * one grid cell.
+ */
+.fields {
     margin: 0;
     display: grid;
-    grid-template-columns: auto 1fr;
-    gap: .35rem 1.25rem;
-    font-size: .9rem;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    gap: .9rem 1.5rem;
+    align-items: start;
 }
 
-.detail dt { font-weight: 600; color: var(--muted); }
-.detail dd { margin: 0; }
+.fields > div { min-width: 0; }
+
+.fields dt {
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: .1rem;
+}
+
+.fields dd { margin: 0; font-size: .9rem; overflow-wrap: anywhere; }
+
+.fields + h3 { margin-top: 1.5rem; }
 
 .chips {
     list-style: none;

@@ -60,14 +60,29 @@ class ParishPriestTests {
     @Test
     @DisplayName("a closed posting keeps the date the priest actually left")
     void endedPostingsKeepTheirDate() {
-        List<ParishPriest> history =
-                parishPriestRepository.findByChurchIdAndDeletedFlagFalseOrderByFromDateDesc(CHENNAI);
+        // Found by name, not by position: appointments are added through the running
+        // application, so neither the size of this history nor the order is fixed.
+        ParishPriest previous =
+                parishPriestRepository.findByChurchIdAndDeletedFlagFalseOrderByFromDateDesc(CHENNAI)
+                        .stream()
+                        .filter(posting -> "Fr. Gnanaprakasam".equals(posting.getPriestName()))
+                        .findFirst()
+                        .orElseThrow();
 
-        assertEquals(2, history.size());
-        ParishPriest previous = history.get(1);
-        assertEquals("Fr. Gnanaprakasam", previous.getPriestName());
         assertEquals(2021, previous.getToDate().getYear());
         assertTrue(!previous.isCurrentlyServing());
+    }
+
+    @Test
+    @DisplayName("an assistant serving alongside does not close the parish priest")
+    void assistantsDoNotDisplaceThePriest() {
+        List<ParishPriest> serving = parishPriestRepository
+                .findByChurchIdAndToDateIsNullAndDeletedFlagFalseOrderByClergyRoleAscFromDateAsc(CHENNAI);
+
+        // However many assistants or brothers are serving, exactly one parish priest is.
+        assertEquals(1, serving.stream()
+                .filter(p -> p.getClergyRole() == ClergyRole.PARISH_PRIEST)
+                .count());
     }
 
     @Test

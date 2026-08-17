@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Members')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Saved.</div>
+    <div class="alert alert-error" th:if="${flashError}" th:text="${flashError}">Error.</div>
+
+    <div class="page-head list-head">
+        <div>
+            <h1>
+                <span th:text="#{member.title}">Members</span>
+                <!-- The count follows the search: how many matched, not how many exist. -->
+                <span class="count-note"
+                      th:text="'(' + #{member.subtitle(${paged.totalRows},
+                                                       ${header.churchName})} + ')'">
+                    (6 in St. Mary's Cathedral)
+                </span>
+            </h1>
+        </div>
+        <div class="form-actions">
+            <a class="btn btn-quiet" th:if="${backUrl != null}" th:href="@{${backUrl}}"
+               th:text="#{__${backKey}__}">Back</a>
+            <a class="btn" th:if="${header.can('PERM_MEMBER_ADD')}" th:href="@{/members/new}"
+               th:text="#{member.add}">Add member</a>
+        </div>
+    </div>
+
+    <p class="filter-chip" th:if="${filterLabel != null}">
+        <span th:text="#{member.filteredBy(${filterLabel})}">Showing X only</span>
+        <a th:href="@{/members}" th:title="#{member.clearFilter}">&times;</a>
+    </p>
+
+    <!--
+        The search boxes submit to the server. They used to filter the rows already on
+        screen, which was fine while every row was rendered -- with paging it would have
+        searched fifty rows and reported nobody, for someone plainly in the register.
+    -->
+    <form id="member-search" method="get" th:action="@{/members}">
+        <input type="hidden" name="family" th:if="${param.family}" th:value="${param.family}">
+        <input type="hidden" name="anbiyam" th:if="${param.anbiyam}" th:value="${param.anbiyam}">
+        <input type="hidden" name="size" th:value="${paged.size}">
+    </form>
+
+    <table class="table">
+            <thead>
+            <tr>
+                <th th:text="#{member.column.name}">Name</th>
+                <th th:text="#{member.column.family}">Family</th>
+                <th th:text="#{member.column.role}">Family role</th>
+                <th th:text="#{member.column.anbiyam}">Anbiyam</th>
+                <th th:text="#{member.column.mobile}">Mobile</th>
+                <th class="acts" th:text="#{table.operations}">Operations</th>
+            </tr>
+            <tr class="filter-row">
+                <th><input class="filter-input" form="member-search" type="search" name="name"
+                           th:value="${search.name}" th:placeholder="#{member.column.name}"></th>
+                <th><input class="filter-input" form="member-search" type="search" name="familyText"
+                           th:value="${search.family}" th:placeholder="#{member.column.family}"></th>
+                <th>
+                    <select class="filter-input" form="member-search" name="role">
+                        <option value="">—</option>
+                        <option th:each="r : ${familyRoles}" th:value="${r}"
+                                th:selected="${r == search.familyRole}" th:text="${r.label}">Head</option>
+                    </select>
+                </th>
+                <th><input class="filter-input" form="member-search" type="search" name="anbiyamText"
+                           th:value="${search.anbiyam}" th:placeholder="#{member.column.anbiyam}"></th>
+                <th><input class="filter-input" form="member-search" type="search" name="mobile"
+                           th:value="${search.mobile}" th:placeholder="#{member.column.mobile}"></th>
+                <th class="acts">
+                    <button class="btn btn-small" form="member-search" type="submit" th:text="#{table.search}">Search</button>
+                    <a class="link" th:if="${search.active}" th:href="@{/members}"
+                       th:text="#{table.clear}">Clear</a>
+                </th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(paged.rows)}">
+                <td colspan="6" class="empty-cell" th:text="#{table.noMatches}">
+                    Nothing matches that search.
+                </td>
+            </tr>
+            <tr th:each="row : ${paged.rows}">
+                <td data-label="Name">
+                    <a th:href="@{/members/{id}(id=${row.id})}" th:text="${row.name}">Name</a>
+                    <span class="id-tag" th:text="'#' + ${row.id}">#1</span>
+                </td>
+                <td data-label="Family">
+                    <a th:href="@{/members(family=${row.familyId})}" th:text="${row.familyName}">Family</a>
+                    <span class="id-tag" th:text="${row.familyCode} + ' · #' + ${row.familyId}">FAM-001 · #1</span>
+                </td>
+                <td data-label="Family role" th:text="${row.familyRole} ?: '—'">Head</td>
+                <td data-label="Anbiyam">
+                    <a th:href="@{/members(anbiyam=${row.anbiyamId})}" th:text="${row.anbiyamName}">Anbiyam</a>
+                    <span class="id-tag" th:text="'#' + ${row.anbiyamId}">#1</span>
+                </td>
+                <td data-label="Mobile" th:text="${row.mobile} ?: '—'">—</td>
+                <td class="acts">
+                    <a class="link" th:href="@{/members/{id}(id=${row.id})}">View</a>
+                    <a class="link" th:if="${header.can('PERM_MEMBER_EDIT')}"
+                       th:href="@{/members/{id}/edit(id=${row.id})}" th:text="#{action.edit}">Edit</a>
+                    <form th:if="${header.can('PERM_MEMBER_DELETE')}"
+                          th:action="@{/members/{id}/delete(id=${row.id})}" method="post" class="inline-form">
+                        <button class="link link-danger" type="submit" th:text="#{action.delete}">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+    </table>
+
+    <div th:replace="~{fragments/paging :: controls(${paged}, ${params})}"></div>
+</main>
+</body>
+</html>
