@@ -1,0 +1,12 @@
+{
+  "name": "church-mgmt-deck",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Generator for docs/church-app-overview.pptx",
+  "scripts": {
+    "build": "node generate.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}

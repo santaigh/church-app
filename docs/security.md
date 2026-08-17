@@ -129,6 +129,25 @@ must be changeable without a redeploy, so it belongs in rows. Changing the matri
 At sign-in, permissions become authorities of the form `PERM_MEMBER_EDIT`, alongside
 `ROLE_AppSA`.
 
+### How they are enforced
+
+Two places, and only one of them counts:
+
+- **The menu** is built from the account's own authorities, so a module it cannot open is
+  not offered. This is presentation.
+- **Every controller method carries `@PreAuthorize`.** This is the door. A link that is
+  hidden but typed as a URL is refused with **403**, and there are tests that post
+  straight to the URL to prove it.
+
+Hiding a control is not access control. The tests assert both — that the button is absent
+*and* that the request is refused.
+
+One consequence worth recording: method security throws `AccessDeniedException` inside the
+controller invocation, where the `@ControllerAdvice` sees it before Spring Security's
+filter can. Without an explicit handler every refusal renders as a **500**, which is
+misleading in the interface and indistinguishable from a real fault in a log.
+`GlobalExceptionHandler` handles it as 403 for exactly that reason.
+
 | Role | ADD | VIEW | EDIT | DELETE | ACT/DEACT | EXPORT |
 |---|:--:|:--:|:--:|:--:|:--:|:--:|
 | SaaSSAdmin | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
@@ -138,7 +157,27 @@ At sign-in, permissions become authorities of the form `PERM_MEMBER_EDIT`, along
 | AppAdmin | ✓ | ✓ | ✓ | — | ✓ | ✓ |
 | AppUser | — | ✓ | — | — | — | — |
 
-275 rows across 11 resources. SaaS and App roles share an operation set on purpose — what
+**`PARISH_PRIEST` is the exception to this table** (V20): VIEW for every role, ADD and
+EDIT for SaaSSAdmin and SaaSAdmin only, DELETE for SaaSSAdmin. Parish staff see who serves
+them but cannot change it — appointing clergy is a diocese-level act.
+
+**`AppUser` also holds `PAYMENT ADD`** (V23), so a volunteer can collect money and print a
+receipt, but never edit or void what they recorded. Whoever takes the cash is not the
+person who can quietly change the record of it.
+
+### Granting a role
+
+Role assignment is the most security-sensitive field on `member`, because credentials live
+on that table: granting a role grants a way in. Two rules, enforced in the service rather
+than by the dropdown:
+
+- **An AppAdmin may grant any parish role except AppSA.** Otherwise an AppAdmin creates a
+  super-admin account and signs in as it — promotion in two clicks
+- **Nobody edits their own role**, or the first rule is one save away from meaningless
+
+Every change writes `ROLE_ASSIGNED` with the old and new values.
+
+287 rows across 12 resources. SaaS and App roles share an operation set on purpose — what
 separates them is the *breadth of data* they reach, enforced by tenant filtering rather
 than by this matrix.
 

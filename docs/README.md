@@ -5,7 +5,8 @@ each church sees only its own data.
 
 | Document | Covers |
 |---|---|
-| **[church-app-overview.pptx](church-app-overview.pptx)** | **10-slide visual overview** — diagrams as editable PowerPoint shapes |
+| **[church-app-overview.pptx](church-app-overview.pptx)** | **11-slide visual overview** — diagrams as editable PowerPoint shapes. Regenerate with `docs/deck` rather than editing by hand |
+| **[modules.md](modules.md)** | **What the application does today, screen by screen** |
 | [architecture.md](architecture.md) | System overview, layering, request flow, technology choices |
 | [database-schema.md](database-schema.md) | ERD, table-by-table reference, tenant scoping, known inconsistencies |
 | [security.md](security.md) | The two login chains, RBAC model, password lifecycle, lockout, audit |
@@ -51,3 +52,20 @@ are in `src/main/resources/application.yml`.
 
 Sample accounts all use the password `Welcome123$`. See
 [security.md](security.md#sample-accounts).
+
+## Regenerating the deck
+
+The slides are an **output**, not a source. The first version was generated and its script
+thrown away, so when half its "open risks" were solved there was no way to correct it
+short of rewriting the generator. Edit `docs/deck/generate.js` instead of the `.pptx`.
+
+```bash
+cd docs/deck
+npm install
+npm run build                                              # writes ../church-app-overview.pptx
+powershell -ExecutionPolicy Bypass -File render-slides.ps1 # rewrites ../slides/*.png
+```
+
+Close PowerPoint first. The render drives it over COM, and it will attach to a running
+instance — regenerating the `.pptx` while PowerPoint has it open produces a file that
+opens with zero slides.

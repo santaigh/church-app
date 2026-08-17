@@ -3,8 +3,21 @@
 MySQL 8, schema `churchnew`, `utf8mb4 / utf8mb4_unicode_ci` throughout — Anbiyam and
 member names are stored in Tamil script.
 
-Schema is owned by **Flyway** (V1–V16). Hibernate runs with `ddl-auto: validate`, so the
+Schema is owned by **Flyway** (V1–V24). Hibernate runs with `ddl-auto: validate`, so the
 application refuses to start if an entity and its table have drifted apart.
+
+## What V17–V24 changed
+
+| | |
+|---|---|
+| **V17** | Dropped `church.category_id`. A substation is one **because it has a parent**, not because a column says so — and the two had already disagreed |
+| **V18** | *(seed)* One real substation, so the parent/child structure can be seen |
+| **V19** | `parish_priest` gains `clergy_role`, `deleted_flag`, `version`; `to_date` becomes nullable and **NULL now means currently serving**; `active_flag` was used once to identify who was serving, then dropped |
+| **V20** | Seeds `PARISH_PRIEST` permissions — VIEW for every role, ADD/EDIT for the two platform admins, DELETE for the super admin |
+| **V21** | `member.catagory` → `member.family_role`, holding a `FamilyRole` |
+| **V22** | *(seed)* Corrects those values by hand. Occupations moved to `member_ext.occupation`; ANIMATOR and PRIEST were already recorded properly elsewhere |
+| **V23** | Grants `AppUser` `PAYMENT ADD` — a volunteer collects and prints but can never edit or void what they recorded |
+| **V24** | `payment_due.due_type` — MONTHLY or OPENING_BALANCE, so arrears carried in at cutover can be told apart from being behind this year |
 
 > Apply schema changes as migrations, never directly to the database. V16 exists solely to
 > repair a constraint that was added by hand, which left the migration history describing
@@ -173,8 +186,8 @@ Not every table follows the convention. These are recorded rather than silently 
 | `role_permission` | No `deleted_flag` | **Yes** — revoking hard-deletes. A soft-deleted row would still occupy the unique key, so re-granting the same permission later would fail |
 | `payment_allocation`, `receipt_sequence` | No `record_status`, `deleted_flag`, `version` | Yes — internal bookkeeping |
 | `anbiyam` | No `version` | **Inherited** — pre-existing table, no optimistic locking |
-| `parish_priest` | No `record_status`, `deleted_flag`, `version` | **Inherited** |
-| `member.catagory` | Misspelled column name | **No** — mapped to a Java field named `category` rather than renamed, since a rename needs its own migration |
+| `parish_priest` | No `record_status` | Inherited. `deleted_flag` and `version` were added by V19 when the table was finally mapped |
+| ~~`member.catagory`~~ | ~~Misspelled column name~~ | **Fixed.** V21 renamed it `family_role`; V22 replaced its contents, which had held parish duties and occupations rather than family positions |
 | `member_ext.family_id` | No foreign key | **No** — `church_id` and `member_id` are FK'd but `family_id` is not |
 | `family.head_member_id` | No foreign key | **Yes** — `member.family_id` is NOT NULL, so a two-way FK would be circular and neither row could be inserted first |
 | `anbiyam.head_member_id` | *Has* an FK | Inconsistent with `family.head_member_id` above |

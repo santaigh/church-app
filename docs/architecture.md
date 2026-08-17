@@ -41,7 +41,7 @@ flowchart TB
     end
 
     DB[("MySQL 8<br/>churchnew")]
-    Flyway["Flyway<br/>V1 … V16"]
+    Flyway["Flyway<br/>V1 … V24"]
     Logs["logs/church-app.log<br/>logs/church-app-error.log"]
 
     Parishioner --> CorrId
@@ -133,7 +133,7 @@ through an async appender with `neverBlock`, so logging can never stall a reques
 | Java | 17 | |
 | Gradle | 9.5.1 | via wrapper |
 | MySQL | 8.0.45 | utf8mb4 throughout, for Tamil script |
-| Flyway | V1–V16 | Baselined over pre-existing tables |
+| Flyway | V1–V24 | Baselined over pre-existing tables |
 | Thymeleaf | | Server-rendered; no JS framework |
 
 **No inline JavaScript.** The CSP sets `script-src 'self'`, so scripts live in

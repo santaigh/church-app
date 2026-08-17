@@ -128,15 +128,69 @@ A payment may exceed what is currently owed. The surplus is
 `amount - allocated_amount` — advance credit, applied when future months are raised.
 `PaymentRepository.findWithUnallocatedAmount` lists receipts holding one.
 
+## Opening balances
+
+A parish adopting this already has families who owe money, sometimes years of it.
+Reconstructing that month by month would mean inventing amounts nobody charged, so each
+family instead gets **one line**: everything owed before the system started.
+
+It is dated the **month before that family's `dues_start_date`** — a slot no generated
+month can occupy, so the unique key needs no relaxing and the row sorts first for
+oldest-first allocation. Which is exactly where arrears carried forward belong.
+
+`due_type` (V24) tells it apart from an ordinary month, so a summary can separate "behind
+this year" from "brought in from the old book".
+
+The figure is editable until money lands on it, then locked: rewriting an amount a receipt
+was written against would leave the parish's books disagreeing with the family's paper. A
+family in **credit** is not a negative here — that is recorded as a payment.
+
+## Correcting a mistake
+
+A receipt is never edited and never deleted. **Void and reissue:**
+
+1. The original is marked VOID with a reason and a name; its allocations are reversed and
+   the months restored
+2. A corrected receipt is issued, and the two are cross-referenced — the old one records
+   "replaced by R-2026-0004", the new one "replaces R-2026-0003"
+3. **The number stays consumed.** A gap in a receipt book cannot be told apart from a
+   covered-up shortfall, which is the only reason to number gaplessly in the first place
+
+Why not simply edit the amount: the family is holding a printed slip. Change the record
+behind it and the parish's books disagree with the only evidence they have.
+
+## Dating a receipt
+
+Today by default. **A past date requires `PAYMENT EDIT`** — a parish collecting on Sunday
+and entering on Monday needs it, but a volunteer should not be choosing what day they took
+cash. **A future date is refused for everyone**: there is no honest reason to write one,
+and it is how money leaves a period about to be counted.
+
+## When a family's amount changes
+
+Months still **PENDING** from the current one onward take the new figure. **PAID** and
+**PARTIAL** months are left alone — they were settled against an amount the family has a
+receipt for. The screen reports what it did rather than changing debts silently.
+
+The ₹50 floor from `app.payment.min-monthly-amount` is enforced here, and the change is
+audited with the old and new values.
+
+## Printing
+
+A page of its own rather than a print stylesheet over the receipt screen, so what reaches
+the printer is exactly what is on it. 58mm wide, bilingual, listing the months settled so a
+family can check their own arrears, with the amount written out in **lakh and crore** —
+not millions.
+
+**On Tamil and thermal printers:** the browser renders the page and sends it through the
+printer's own driver as graphics, so the script prints. The built-in character set that
+cannot render Tamil only applies to raw ESC/POS text, which this never sends. Testing
+without a printer: print to PDF at a custom 58mm width — the same stylesheet drives both.
+
 ## Not yet built
 
-The **data model is complete and tested; the service layer is not.** Nothing yet performs
-an allocation, issues a receipt number, or voids a receipt. The repositories are shaped for
-exactly those calls, including `findForUpdate` with its pessimistic lock.
-
-Also outstanding:
-
-- **The ₹50 minimum contribution is not enforced** — it sits in
-  `app.payment.min-monthly-amount` awaiting the service that validates a rate change
-- **Rate changes are not audited** — when a priest raises a family's amount, that should
-  write `RECORD_UPDATED` with old and new values
+- **Reports** — daily collection, arrears by family, family statement. The aggregate
+  queries exist (`findArrearsByChurch`, `findMonthlySummaryByChurch`) and are unused
+- **Bulk import of historical receipts**, for a parish whose old records are good enough
+- **Printing from a phone to a USB thermal printer** — not possible from a browser; it
+  needs a Bluetooth printer or a PDF handed to the operating system

@@ -119,9 +119,25 @@ Starter names changed from Boot 3. Tutorials will not match:
   remap it and rename the column to `family_role`. **Open question:** parish duties
   (priest, secretary, animator) then have nowhere to live; the user is checking whether
   they are needed at all
-- **Tamil on the 58mm thermal printer** may not be possible as text — those printers
-  carry a built-in character set. Receipts may have to be rendered as an image. Worth
-  settling before Tamil goes live, not after
+- **Tamil on the 58mm thermal printer is fine after all** — the earlier worry was half
+  right. Those printers have two modes: raw ESC/POS text uses a built-in character set
+  with no Tamil, but printing *through the browser and the printer's driver* sends the
+  page as graphics, and any script renders. The app never sends ESC/POS. Still worth
+  confirming on the actual hardware; test without a printer by printing to PDF at 58mm
+- **`@PreAuthorize` refusals render as 500 unless handled.** Method security throws
+  `AccessDeniedException` inside the controller invocation, where the `@ControllerAdvice`
+  catch-all sees it before Spring Security's filter can. `GlobalExceptionHandler` has an
+  explicit handler; remove it and every denied permission looks like a server fault
+- **A list that queries once per row passes every other test.** It is correct, and fine
+  against three families; at six hundred it is hundreds of round trips a page.
+  `QueryCountTests` counts the statements each screen issues via Hibernate statistics and
+  fails if a lazy field creeps back in — it caught `Family.anbiyam` immediately
+- **Flyway checksums applied migrations.** Editing an old migration to fix its prose
+  breaks validation on every database that has run it. V23's comment corrects V11's rather
+  than touching V11
+- **Sample data has a shelf life.** Several tests lean on 2026 being "now" relative to the
+  seeded months. They generate their own periods where it matters, but a test that starts
+  failing on a date boundary is usually this
 
 ## Sample accounts
 
@@ -145,9 +161,17 @@ Lourdes Trichy (2). Anbiyam names are Tamil — utf8mb4 throughout.
 
 ## What is built
 
-Login (both chains) · dynamic RBAC · password lifecycle · lockout · audit trail ·
-full payment data model · **tenant isolation on reads** · dev/uat/prod profiles ·
-**shared page layout with the per-church logo header** · 61 tests.
+Login (both chains) · dynamic RBAC, **now actually enforced** · password lifecycle ·
+lockout · audit trail · tenant isolation on reads **and writes** · dev/uat/prod profiles ·
+shared page layout with the per-church logo header · **parish selector** ·
+**Anbiyam · Parish Priest · Members · Families (read-only) · Payments** ·
+server-side paging and search · **195 tests**.
+
+See [docs/modules.md](docs/modules.md) for what each screen does and the rules behind it.
+
+Enforcement is two things, and only one counts: the menu is built from the account's
+authorities (presentation), and every controller method carries `@PreAuthorize` (the
+door). Tests post straight to hidden URLs and expect 403.
 
 The layout lives in `templates/fragments/layout.html` (`head(title)` and `topbar`).
 `HeaderModelAdvice` puts `${header}` into every view, so a page needs no controller
@@ -161,29 +185,25 @@ URL to tamper with. A missing file falls back to a shipped default.
 
 1. **Bootstrap admin — blocking.** `churchuat` and `churchprod` have zero accounts and
    every page is behind a login, so a fresh deployment cannot be signed into at all
-2. **Nothing checks permissions.** `@PreAuthorize` appears in one comment. The 275
-   permission rows are loaded as authorities at sign-in and never consulted
-3. **`created_user` / `updated_user` are never populated** — no `AuditorAware`
-4. **Write-side tenant stamping** — reads are protected, writes are not. A form posting a
-   hidden `churchId` would currently be trusted
-5. **No CRUD screens at all** — dashboards are placeholders
-6. **No church selector for platform staff.** A `saas_user` has `churchId = null`, so
-   there is no way for them to enter one parish. Blocks the parish-priest module, whose
-   writes need a `church_id`
-7. **Logo upload** — the header displays a logo, but nothing uploads one. Files are placed
-   by hand for now; upload belongs on the church edit screen
-8. **Payment service layer** — the model is complete and tested, but nothing records a
-   receipt, allocates, or voids
-9. **No admin unlock screen** — locked accounts need SQL
-10. **Receipt printing** and the Indian amount-in-words utility (lakh/crore, not millions)
-11. **No CI**
+2. **Excel import** — designed in detail, not built. One row per person carrying its
+   family, so families are created on first sight of a new code; anbiyam must exist first.
+   It must call the **services**, not the repositories, or it becomes a second and weaker
+   set of rules. The role guard applies there too: a sheet with a `role` column is the
+   same escalation path as the dropdown, just quieter
+3. **Family add and edit** — the list is read-only, so 600 families can only arrive by
+   import
+4. **Reports** — daily collection, arrears by family, family statement. The aggregate
+   queries already exist (`findArrearsByChurch`, `findMonthlySummaryByChurch`) and are
+   unused
+5. **Logo upload** — the header displays one; files are placed by hand
+6. **No admin unlock screen** — locked accounts need SQL
+7. **Parish duties** — priest, secretary, animator have nowhere to live now that
+   `family_role` means family position. The user was checking whether they are needed
+8. **No CI**
 
-Agreed order from here: **church selector** (touches the tenant context, so it stands
-alone) → **Anbiyam module**, which is the template and carries `@PreAuthorize`,
-`AuditorAware` and write-side stamping with it → **Parish Priest module**, which first
-needs a migration making `to_date` nullable and adding `deleted_flag`, a
-`PARISH_PRIEST` value in the `Resource` enum with its permission rows seeded, and an
-entity, since that table is currently unmapped.
+The **member module's own screens are built**, but a parish still cannot be loaded without
+the import, and a fresh deployment cannot be signed into without the bootstrap admin.
+Those two are what stand between this and a real parish using it.
 
 ## Git
 
