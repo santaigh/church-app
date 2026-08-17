@@ -6,6 +6,7 @@ import com.church.app.security.SelectedChurch;
 import com.church.app.security.TenantContext;
 import com.church.app.service.AuditService;
 import com.church.app.service.ChurchDirectoryService;
+import com.church.app.service.ChurchService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,13 +33,16 @@ public class ChurchSelectionController {
     private static final Logger log = LoggerFactory.getLogger(ChurchSelectionController.class);
 
     private final ChurchDirectoryService churchDirectoryService;
+    private final ChurchService churchService;
     private final SelectedChurch selectedChurch;
     private final AuditService auditService;
 
     public ChurchSelectionController(ChurchDirectoryService churchDirectoryService,
+                                     ChurchService churchService,
                                      SelectedChurch selectedChurch,
                                      AuditService auditService) {
         this.churchDirectoryService = churchDirectoryService;
+        this.churchService = churchService;
         this.selectedChurch = selectedChurch;
         this.auditService = auditService;
     }
@@ -67,6 +71,7 @@ public class ChurchSelectionController {
         TenantContext.setPlatformWide();
 
         model.addAttribute("stations", churchDirectoryService.stations());
+        model.addAttribute("removed", churchService.removed());
         model.addAttribute("selectedId", churchId);
         model.addAttribute("detail", churchId == null
                 ? null

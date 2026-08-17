@@ -64,6 +64,13 @@ spring:
     placeholder-replacement: false
     encoding: UTF-8
 
+  servlet:
+    multipart:
+      # The logo upload checks 2MB itself; without this Spring refuses first, with a
+      # container-level error rather than the message the screen wants to show.
+      max-file-size: 2MB
+      max-request-size: 4MB
+
   thymeleaf:
     prefix: classpath:/templates/
     suffix: .html

@@ -889,3 +889,15 @@ body.theme-platform .btn:hover { background: #163a5a; }
     font-size: .75rem;
     font-family: ui-monospace, Consolas, monospace;
 }
+
+/* ------------------------------------------------------ parish administration */
+
+.split-list-top { display: flex; align-items: baseline; justify-content: space-between; padding: .35rem .75rem .3rem; }
+.split-list-top .split-list-head { margin: 0; }
+
+/* Destructive, and it should look it without shouting on every visit. */
+.danger-zone { border-color: var(--danger); }
+.danger-zone h2 { color: var(--danger); }
+
+.removed-parishes { margin-top: 1.5rem; }
+.removed-parishes .sub-list li { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; }

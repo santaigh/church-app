@@ -17,7 +17,11 @@
 
         <!-- Left: every station, with the town, because two parishes may share a name. -->
         <nav class="split-list" aria-label="Parishes">
-            <p class="split-list-head">Parishes</p>
+            <div class="split-list-top">
+                <p class="split-list-head">Parishes</p>
+                <a class="link" th:if="${header.can('PERM_CHURCH_ADD')}"
+                   th:href="@{/saas/churches/new}" th:text="#{church.add}">Add parish</a>
+            </div>
             <a class="church-row" th:each="station : ${stations}"
                th:href="@{/saas/dashboard(church=${station.id})}"
                th:classappend="${station.id == selectedId} ? ' on' : ''">
@@ -43,10 +47,17 @@
                         <h2 th:text="${detail.name}">Church name</h2>
                         <p class="muted" th:text="${detail.town}">Town</p>
                     </div>
-                    <form th:action="@{/saas/enter-church}" method="post">
-                        <input type="hidden" name="churchId" th:value="${detail.id}">
-                        <button class="btn" type="submit">Enter this parish →</button>
-                    </form>
+                    <div class="form-actions">
+                        <!-- The everyday action stays primary; administering the record is
+                             a rarer thing and sits quietly beside it. -->
+                        <form th:action="@{/saas/enter-church}" method="post">
+                            <input type="hidden" name="churchId" th:value="${detail.id}">
+                            <button class="btn" type="submit">Enter this parish →</button>
+                        </form>
+                        <a class="btn btn-quiet" th:if="${header.can('PERM_CHURCH_EDIT')}"
+                           th:href="@{/saas/churches/{id}/edit(id=${detail.id})}"
+                           th:text="#{church.edit}">Edit</a>
+                    </div>
                 </div>
 
                 <div class="stat-row">
@@ -106,6 +117,27 @@
             </div>
         </section>
     </div>
+
+    <!--
+        Nothing inside a removed parish was deleted, so restoring brings all of it back.
+        Collapsed, because it should be findable without being in the way.
+    -->
+    <details class="collapse removed-parishes"
+             th:if="${header.can('PERM_CHURCH_DELETE') and !#lists.isEmpty(removed)}">
+        <summary th:text="#{church.removed(${#lists.size(removed)})}">Removed parishes</summary>
+        <div class="collapse-body">
+            <ul class="sub-list">
+                <li th:each="gone : ${removed}">
+                    <span class="sub-name" th:text="${gone.name}">Parish</span>
+                    <span class="sub-where" th:text="${gone.town}">Town</span>
+                    <form th:action="@{/saas/churches/{id}/restore(id=${gone.id})}" method="post"
+                          class="inline-form">
+                        <button class="link" type="submit" th:text="#{church.restore}">Restore</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </details>
 </main>
 </body>
 </html>

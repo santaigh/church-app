@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments/layout :: head('Parish')}"></head>
+<body class="theme-platform">
+<header th:replace="~{fragments/layout :: topbar}"></header>
+
+<main class="page page-narrow">
+    <div class="alert alert-info" th:if="${flash}" th:text="${flash}">Saved.</div>
+    <div class="alert alert-error" th:if="${flashError}" th:text="${flashError}">Error.</div>
+
+    <div class="page-head">
+        <h1 th:text="${form.id == null} ? #{church.add} : #{church.edit}">Add parish</h1>
+        <p class="muted" th:if="${form.id == null}" th:text="#{church.add.hint}">
+            A parish and the account that can first sign into it.
+        </p>
+    </div>
+
+    <section class="card card-form card-wide">
+        <form th:action="${form.id == null} ? @{/saas/churches/new}
+                          : @{/saas/churches/{id}/edit(id=${form.id})}"
+              th:object="${form}" method="post">
+
+            <h3 th:text="#{church.section.parish}">Parish</h3>
+            <div class="form-grid">
+                <div class="field">
+                    <label for="churchName" th:text="#{church.field.name}">Name</label>
+                    <input type="text" id="churchName" th:field="*{churchName}" required autofocus>
+                    <p class="field-error" th:if="${#fields.hasErrors('churchName')}"
+                       th:errors="*{churchName}">Error</p>
+                </div>
+                <div class="field">
+                    <label for="city" th:text="#{church.field.city}">Town</label>
+                    <input type="text" id="city" th:field="*{city}" required>
+                    <p class="field-hint" th:text="#{church.field.city.hint}">
+                        Shown beside the name — two parishes may share one.
+                    </p>
+                    <p class="field-error" th:if="${#fields.hasErrors('city')}" th:errors="*{city}">Error</p>
+                </div>
+                <div class="field">
+                    <label for="diocese" th:text="#{church.field.diocese}">Diocese</label>
+                    <input type="text" id="diocese" th:field="*{diocese}">
+                </div>
+                <div class="field">
+                    <label for="location" th:text="#{church.field.location}">Location</label>
+                    <input type="text" id="location" th:field="*{location}">
+                </div>
+                <div class="field">
+                    <label for="addressLine1" th:text="#{church.field.address1}">Address line 1</label>
+                    <input type="text" id="addressLine1" th:field="*{addressLine1}">
+                </div>
+                <div class="field">
+                    <label for="addressLine2" th:text="#{church.field.address2}">Address line 2</label>
+                    <input type="text" id="addressLine2" th:field="*{addressLine2}">
+                </div>
+                <div class="field">
+                    <label for="district" th:text="#{church.field.district}">District</label>
+                    <input type="text" id="district" th:field="*{district}">
+                </div>
+                <div class="field">
+                    <label for="state" th:text="#{church.field.state}">State</label>
+                    <input type="text" id="state" th:field="*{state}">
+                </div>
+                <div class="field">
+                    <label for="pincode" th:text="#{church.field.pincode}">Pincode</label>
+                    <input type="text" id="pincode" th:field="*{pincode}">
+                </div>
+                <div class="field">
+                    <label for="phone" th:text="#{church.field.phone}">Phone</label>
+                    <input type="text" id="phone" th:field="*{phone}">
+                </div>
+                <div class="field">
+                    <label for="email" th:text="#{church.field.email}">Email</label>
+                    <input type="email" id="email" th:field="*{email}">
+                    <p class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}">Error</p>
+                </div>
+                <div class="field">
+                    <label for="establishedDate" th:text="#{church.field.established}">Established</label>
+                    <input type="date" id="establishedDate" th:field="*{establishedDate}">
+                </div>
+            </div>
+
+            <!--/*
+                Only when creating. A parish with no account cannot be signed into, and its
+                first member cannot be added from inside, because adding a member needs a
+                family and an anbiyam that only somebody signed in could create.
+            */-->
+            <div th:if="${form.id == null}">
+                <h3 th:text="#{church.section.admin}">First administrator</h3>
+                <p class="field-hint" th:text="#{church.section.admin.hint}">
+                    Created as a parish super admin on the default password, with a forced
+                    change at first sign-in. Leave blank to add one later by hand.
+                </p>
+                <div class="form-grid">
+                    <div class="field">
+                        <label for="adminFirst" th:text="#{member.field.firstName}">First name</label>
+                        <input type="text" id="adminFirst" th:field="*{administrator.firstName}">
+                    </div>
+                    <div class="field">
+                        <label for="adminLast" th:text="#{member.field.lastName}">Last name</label>
+                        <input type="text" id="adminLast" th:field="*{administrator.lastName}">
+                    </div>
+                    <div class="field">
+                        <label for="adminGender" th:text="#{member.field.gender}">Gender</label>
+                        <select id="adminGender" th:field="*{administrator.gender}">
+                            <option value="MALE">Male</option>
+                            <option value="FEMALE">Female</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="adminEmail" th:text="#{member.field.email}">Email</label>
+                        <input type="email" id="adminEmail" th:field="*{administrator.email}">
+                    </div>
+                    <div class="field">
+                        <label for="adminMobile" th:text="#{member.field.mobile}">Mobile</label>
+                        <input type="text" id="adminMobile" th:field="*{administrator.mobile}">
+                        <p class="field-hint" th:text="#{church.admin.identifier}">
+                            One of email or mobile is needed — it is what they sign in with.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn" type="submit" th:text="#{action.save}">Save</button>
+                <a class="btn btn-quiet" th:href="@{/saas/dashboard}" th:text="#{action.cancel}">Cancel</a>
+            </div>
+        </form>
+    </section>
+
+    <!--/* Everything below exists only for a parish that already exists. */-->
+    <div th:if="${form.id != null}">
+
+        <section class="card card-wide">
+            <h2 th:text="#{church.logo}">Parish crest</h2>
+            <p class="muted" th:text="#{church.logo.hint}">
+                Shown in the header for everyone in this parish. Converted to PNG on upload.
+            </p>
+            <form th:action="@{/saas/churches/{id}/logo(id=${form.id})}" method="post"
+                  enctype="multipart/form-data" class="void-form">
+                <input type="file" name="logo" accept="image/*" required>
+                <button class="btn" type="submit" th:text="#{church.logo.upload}">Upload</button>
+            </form>
+        </section>
+
+        <section class="card card-wide">
+            <h2 th:text="#{church.substations}">Substations</h2>
+            <p class="muted" th:text="#{church.substations.hint}">
+                Chapels under this parish. They hold no members, families, anbiyam or clergy
+                of their own — this parish's priest looks after them.
+            </p>
+
+            <ul class="sub-list" th:unless="${#lists.isEmpty(substations)}">
+                <li th:each="sub : ${substations}">
+                    <span class="sub-name" th:text="${sub.name}">Chapel</span>
+                    <span class="sub-where" th:text="${sub.address} ?: ${sub.location}">Where</span>
+                    <form th:action="@{/saas/churches/{id}/substations/{sid}/remove(id=${form.id},sid=${sub.id})}"
+                          method="post" class="inline-form">
+                        <button class="link link-danger" type="submit" th:text="#{action.delete}">Remove</button>
+                    </form>
+                </li>
+            </ul>
+            <p class="muted" th:if="${#lists.isEmpty(substations)}" th:text="#{church.substations.none}">
+                None recorded.
+            </p>
+
+            <form th:action="@{/saas/churches/{id}/substations(id=${form.id})}" method="post"
+                  class="form-grid">
+                <div class="field">
+                    <label for="subName" th:text="#{church.substation.name}">Name</label>
+                    <input type="text" id="subName" name="name" required>
+                </div>
+                <div class="field">
+                    <label for="subLocation" th:text="#{church.field.location}">Location</label>
+                    <input type="text" id="subLocation" name="location">
+                </div>
+                <div class="field">
+                    <label for="subAddress" th:text="#{church.field.address1}">Address</label>
+                    <input type="text" id="subAddress" name="address">
+                </div>
+                <div class="field field-check">
+                    <button class="btn btn-small" type="submit" th:text="#{church.substation.add}">Add</button>
+                </div>
+            </form>
+        </section>
+
+        <!--/*
+            Removing a parish hides its whole register at once, so the name is typed rather
+            than a button clicked. Nothing inside is deleted, and restoring brings it back.
+        */-->
+        <section class="card card-wide danger-zone" th:if="${header.can('PERM_CHURCH_DELETE')}">
+            <h2 th:text="#{church.remove}">Remove this parish</h2>
+            <p class="muted" th:text="#{church.remove.hint}">
+                Its members, families, anbiyam and receipts are kept, but nobody can reach
+                them until the parish is restored.
+            </p>
+            <form th:action="@{/saas/churches/{id}/remove(id=${form.id})}" method="post"
+                  class="void-form">
+                <label for="confirmName">
+                    <span th:text="#{church.remove.confirm}">Type the parish name to confirm</span>
+                    <strong th:text="${form.churchName}">St. Mary's Cathedral</strong>
+                </label>
+                <input type="text" id="confirmName" name="confirmName" required autocomplete="off">
+                <button class="btn btn-danger" type="submit" th:text="#{church.remove.action}">
+                    Remove parish
+                </button>
+            </form>
+        </section>
+    </div>
+</main>
+</body>
+</html>

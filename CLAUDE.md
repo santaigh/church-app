@@ -4,7 +4,7 @@ Multi-tenant parish administration platform. Spring Boot 4.1 · Java 17 · Thyme
 MySQL 8 · Gradle · Flyway.
 
 Full documentation is in [docs/](docs/) — architecture, database schema, security,
-payments, plus a 10-slide overview deck.
+payments, modules, plus an 11-slide deck regenerated from `docs/deck`.
 
 ## How the user wants to work
 
@@ -27,7 +27,7 @@ Propose the step, state the decisions it needs, then stop. Small, verifiable ste
 - No LibreOffice; PowerPoint 15.0 is available via COM for rendering decks
 
 ```bash
-gradlew.bat build      # compile, migrate, run 57 tests
+gradlew.bat build      # compile, migrate, run 204 tests
 gradlew.bat bootRun    # http://localhost:8080
 ```
 
@@ -50,7 +50,7 @@ Starter names changed from Boot 3. Tutorials will not match:
   `saas_user`. Credentials valid on one are rejected by the other, by design
 - **Login by email or mobile**; mobiles normalised to `+91…` form
 - **RBAC**: `Operation` and `Resource` are Java enums; the role→permission mapping is data
-  in `role_permission` (275 rows)
+  in `role_permission` (287 rows, 12 resources)
 - **`password_flag`**: 0 = system-assigned, 1 = user chose it. Forced change while 0
 - **Lockout**: 5 failures, no auto-unlock — an administrator clears `locked_at` by SQL
 - **Forgot password** resets to a known shared value (`PleaseReset@123`). The user was
@@ -63,8 +63,9 @@ Starter names changed from Boot 3. Tutorials will not match:
   with a pessimistic lock
 - **UI**: payment screens are mobile/tablet-first; everything else desktop-first but must
   degrade to usable. Receipts print to a 58mm POS thermal printer
-- **App shell is a left sidebar**, collapsing to a drawer on phones and tablet portrait.
-  Chosen over dashboard tiles and a top menu bar because the module list keeps growing
+- **App shell is a menu bar under the header**, inside a parish only. A left sidebar was
+  recommended and the user chose the menu bar instead; do not re-propose the sidebar.
+  Platform staff have no menu at all — one page with actions on it, by decision
 - **Tables become stacked cards below 640px** — everywhere, not only on payments, so
   every module copies one rule rather than two that drift apart
 - **Parish priest is an appointment history**: one row per church posting, `to_date IS
@@ -113,12 +114,10 @@ Starter names changed from Boot 3. Tutorials will not match:
 - **MySQL reports `TINYINT(1)` as `BIT`** — flag columns map to `boolean`, not `int`
 - **pptxgenjs**: negative width/height on a shape produces a file PowerPoint refuses to
   open, and the schema validator does not catch it
-- **`member.catagory` is spelled wrong and holds the wrong data.** The seed put parish
-  duties and occupations in it — `PRIEST`, `ANIMATOR`, `SECRETARY`, `STUDENT`,
-  `HOMEMAKER`, `TEACHER` — none of which is a family position. The member module has to
-  remap it and rename the column to `family_role`. **Open question:** parish duties
-  (priest, secretary, animator) then have nowhere to live; the user is checking whether
-  they are needed at all
+- **`member.catagory` was misspelled and held the wrong data** — parish duties and
+  occupations where a family position belongs. V21 renamed it `family_role`; V22 corrected
+  the values by hand rather than by a rule. **Still open:** parish duties (priest,
+  secretary, animator) have nowhere to live; the user was checking whether they are needed
 - **Tamil on the 58mm thermal printer is fine after all** — the earlier worry was half
   right. Those printers have two modes: raw ESC/POS text uses a built-in character set
   with no Tamil, but printing *through the browser and the printer's driver* sends the
@@ -135,6 +134,16 @@ Starter names changed from Boot 3. Tutorials will not match:
 - **Flyway checksums applied migrations.** Editing an old migration to fix its prose
   breaks validation on every database that has run it. V23's comment corrects V11's rather
   than touching V11
+- **A parish cannot be created without breaking a deadlock.** `member.family_id` and
+  `anbiyam_id` are NOT NULL, so the first administrator needs a family and an anbiyam that
+  only a signed-in user could make. `ChurchService.create` makes a "Parish Office" anbiyam
+  and a FAM-000 family for exactly that reason
+- **Removing a parish cascades nothing.** It sets `deleted_flag` on the church alone; the
+  register stays and becomes unreachable, which is why Restore exists and why the name has
+  to be typed
+- **MockMvc runs inside the test's own transaction**, so a rollback the service performs is
+  still visible to the test thread. Atomicity cannot be asserted that way -- assert the
+  message the user gets instead
 - **Sample data has a shelf life.** Several tests lean on 2026 being "now" relative to the
   seeded months. They generate their own periods where it matters, but a test that starts
   failing on a date boundary is usually this
@@ -164,8 +173,8 @@ Lourdes Trichy (2). Anbiyam names are Tamil — utf8mb4 throughout.
 Login (both chains) · dynamic RBAC, **now actually enforced** · password lifecycle ·
 lockout · audit trail · tenant isolation on reads **and writes** · dev/uat/prod profiles ·
 shared page layout with the per-church logo header · **parish selector** ·
-**Anbiyam · Parish Priest · Members · Families (read-only) · Payments** ·
-server-side paging and search · **195 tests**.
+**Church management · Anbiyam · Parish Priest · Members · Families (read-only) · Payments** ·
+server-side paging and search · **204 tests**.
 
 See [docs/modules.md](docs/modules.md) for what each screen does and the rules behind it.
 
@@ -183,8 +192,11 @@ URL to tamper with. A missing file falls back to a shipped default.
 
 ## What is NOT built — the next work
 
-1. **Bootstrap admin — blocking.** `churchuat` and `churchprod` have zero accounts and
-   every page is behind a login, so a fresh deployment cannot be signed into at all
+1. **Bootstrap admin — blocking, and now the only thing left in the way.** `churchuat`
+   and `churchprod` have zero `saas_user` rows, so nobody can reach the platform screens
+   that would create the first parish. Parish-side onboarding is solved: creating a church
+   creates its first AppSA, along with a placeholder anbiyam and FAM-000 family, because a
+   member needs both and creating either needs somebody already signed in
 2. **Excel import** — designed in detail, not built. One row per person carrying its
    family, so families are created on first sight of a new code; anbiyam must exist first.
    It must call the **services**, not the repositories, or it becomes a second and weaker
